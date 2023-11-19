@@ -17,5 +17,15 @@
   "bugs": {
     "url": "https://github.com/yakubins/webspot-js/issues"
   },
-  "homepage": "https://github.com/yakubins/webspot-js#readme"
+  "homepage": "https://github.com/yakubins/webspot-js#readme",
+  "dependencies": {
+    "postcss": "^8.4.31",
+    "postcss-import": "^15.1.0",
+    "autoprefixer": "^10.4.16",
+    "@csstools/postcss-minify": "^1.0.2",
+    "@csstools/postcss-global-data": "^2.1.0",
+    "postcss-custom-properties": "^13.3.2"
+  },
+  "devDependencies": {
+  }
 }
