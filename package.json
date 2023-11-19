@@ -1,0 +1,21 @@
+{
+  "name": "webspot-js",
+  "version": "0.0.1",
+  "description": "",
+  "main": "src/index.mjs",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yakubins/webspot-js.git"
+  },
+  "keywords": [
+    "web"
+  ],
+  "author": "Yurii Yakubin",
+  "bugs": {
+    "url": "https://github.com/yakubins/webspot-js/issues"
+  },
+  "homepage": "https://github.com/yakubins/webspot-js#readme"
+}
