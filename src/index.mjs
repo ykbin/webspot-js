@@ -37,6 +37,10 @@ function buildStyle({style, buildType, binaryDir}) {
     postcss(stylePlugins).process(style).then(result => {
       fs.writeFile(output, result.css, () => true);
       console.log(`Generate ${filename} [postcss]`);
+      if (result.map) {
+        fs.writeFile(`${output}.map`, result.map);
+        console.log(`Generate ${filename}.map  [postcss]`)
+      }
     });
   }
 };
