@@ -33,7 +33,7 @@ function buildStyle({style, buildType, binaryDir}) {
     const styleFilepath = path.resolve(binaryDir, val);
     const style = fs.readFileSync(styleFilepath, "utf-8");
     const filename = `${key}.bundle.css`;
-    const output = path.resolve(binaryDir, dist, filename);
+    const output = path.resolve(binaryDir, 'dist', filename);
     postcss(stylePlugins).process(style).then(result => {
       fs.writeFile(output, result.css, () => true);
       console.log(`Generate ${filename} [postcss]`);
