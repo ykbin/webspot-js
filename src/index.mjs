@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 import postcss from 'postcss';
 import postcssImport from 'postcss-import';
@@ -48,7 +48,7 @@ function buildStyle({style, buildType, binaryDir}) {
 async function buildConstants({script, sourceDir, binaryDir}) {
   if (script.hasOwnProperty("const")) {
     const inFilename = path.resolve(sourceDir, script.const);
-    const { default: constants } = await import(inFilename);
+    const { default: constants } = await import(pathToFileURL(inFilename));
 
     let content = "";
   
@@ -63,13 +63,14 @@ async function buildConstants({script, sourceDir, binaryDir}) {
         process.exit(1);
       }
       else {
-        console.log("Generate Constans.h [webspot]"); 
+        console.log("Generate Constans.h [webspot]");
       }
     }); 
   }
 }
 
 function build(config) {
+  console.log("Enter build [webspot]");
   buildStyle(config);
   buildConstants(config);
 }
