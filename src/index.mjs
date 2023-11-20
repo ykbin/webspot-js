@@ -45,11 +45,35 @@ function buildStyle({style, buildType, binaryDir}) {
   }
 };
 
+async function buildConstants({script, sourceDir, binaryDir}) {
+  if (script.hasOwnProperty("const")) {
+    const inFilename = path.resolve(sourceDir, script.const);
+    const { default: constants } = await import(inFilename);
+
+    let content = "";
+  
+    for (const [ key, val ] of Object.entries(constants)) {
+      content += `static const char ${key}[] = "${val}";\n`;
+    }
+  
+    const outFilename = path.resolve(binaryDir, "Constans.h");
+    fs.writeFile(outFilename, content, { encoding: 'utf8', flag: 'w' }, (err) => {
+      if (err) {
+        console.log(err);
+        process.exit(1);
+      }
+      else {
+        console.log("Generate Constans.h [webspot]"); 
+      }
+    }); 
+  }
+}
+
 function build(config) {
   buildStyle(config);
+  buildConstants(config);
 }
 
 export default {
-  buildStyle,
   build,
 };
