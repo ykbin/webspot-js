@@ -30,7 +30,7 @@ function buildStyle({style, buildType, binaryDir}) {
     stylePlugins.push(postcssMinify);
 
   for (const [ key, val ] of Object.entries(style.entry)) {
-    const styleFilepath = path.resolve(__dirname, val);
+    const styleFilepath = path.resolve(binaryDir, val);
     const style = fs.readFileSync(styleFilepath, "utf-8");
     const filename = `${key}.bundle.css`;
     const output = path.resolve(binaryDir, dist, filename);
