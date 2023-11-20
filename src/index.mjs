@@ -12,7 +12,7 @@ import postcssCustomProperties from 'postcss-custom-properties';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function buildStyle({style, buildType, binaryDir}) {
+async function buildStyle({style, buildType, binaryDir}) {
   const stylePlugins = [
     postcssImport,
     autoPrefixer,
@@ -30,17 +30,19 @@ function buildStyle({style, buildType, binaryDir}) {
     stylePlugins.push(postcssMinify);
 
   for (const [ key, val ] of Object.entries(style.entry)) {
-    const styleFilepath = path.resolve(binaryDir, val);
-    const style = fs.readFileSync(styleFilepath, "utf-8");
-    const filename = `${key}.bundle.css`;
-    const output = path.resolve(binaryDir, 'dist', filename);
-    postcss(stylePlugins).process(style).then(result => {
-      fs.writeFile(output, result.css, () => true);
-      console.log(`Generate ${filename} [postcss]`);
-      if (result.map) {
-        fs.writeFile(`${output}.map`, result.map);
-        console.log(`Generate ${filename}.map  [postcss]`)
-      }
+    const inFilepath = path.resolve(binaryDir, val);
+    fs.readFile(inFilepath, "utf-8", (err, content) => {
+      if (err) throw err;
+      const outFilename = `${key}.bundle.css`;
+      const outFullFilepath = path.resolve(binaryDir, 'dist', outFilename);
+      postcss(stylePlugins).process(content).then(result => {
+        fs.writeFile(outFullFilepath, result.css, () => true);
+        console.log(`Generate ${outFilename} [postcss]`);
+        if (result.map) {
+          fs.writeFile(`${outFullFilepath}.map`, result.map);
+          console.log(`Generate ${outFilename}.map  [postcss]`)
+        }
+      });
     });
   }
 };
@@ -58,21 +60,22 @@ async function buildConstants({script, sourceDir, binaryDir}) {
   
     const outFilename = path.resolve(binaryDir, "Constans.h");
     fs.writeFile(outFilename, content, { encoding: 'utf8', flag: 'w' }, (err) => {
-      if (err) {
-        console.log(err);
-        process.exit(1);
-      }
-      else {
-        console.log("Generate Constans.h [webspot]");
-      }
+      if (err) throw err;
+      console.log("Generate Constans.h [webspot]");
     }); 
   }
 }
 
 function build(config) {
-  console.log("Enter build [webspot]");
-  buildStyle(config);
-  buildConstants(config);
+  function onError(err) {
+    console.log(err);
+    console.error(err.stack);
+    process.exit(1);
+  }  
+  (async () => {
+    await buildStyle(config).catch(onError);
+    await buildConstants(config).catch(onError);
+  })();
 }
 
 export default {
