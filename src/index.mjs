@@ -25,12 +25,13 @@ async function buildScript({script, buildType, binaryDir}) {
 
   const isDevelopment = (buildType === "Debug");
   for (const [ key, val ] of Object.entries(script.entry)) {
+    const filename = `${key}.bundle.js`;
     const params = {
       mode: isDevelopment ? 'development' : 'production',
       devtool: isDevelopment ? 'inline-source-map' : 'source-map',
       entry: {},
       output: {
-        filename: `${key}.bundle.js`,
+        filename,
         path: distDir,
       }
     };
@@ -43,7 +44,7 @@ async function buildScript({script, buildType, binaryDir}) {
         console.log(err);
         throw err;
       }
-      console.log("Generate converter.bundle.js");
+      console.log(`Generate ${filename} [webpack]`);
     });
   }
 }
