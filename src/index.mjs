@@ -103,19 +103,35 @@ async function buildConstants({script, sourceDir, binaryDir}) {
   }
 }
 
-function build(config) {
-  function onError(err) {
-    console.log(err);
-    console.error(err.stack);
-    process.exit(1);
-  }  
-  (async () => {
-    await buildScript(config).catch(onError);
-    await buildStyle(config).catch(onError);
-    await buildConstants(config).catch(onError);
-  })();
+async function buildJSON({json, sourceDir, binaryDir}) {
+  const distDir = path.join(binaryDir, "dist");
+
+  if (json && json.list) {
+    for (let i = 0; i < json.list.length; i++) {
+      const inFilename = path.resolve(sourceDir, json.list[i]);
+      const outFilename = path.basename(inFilename, '.mjs') + ".json";
+      const { default: module } = await import(pathToFileURL(inFilename));
+      const content = JSON.stringify(module);
+      fs.writeFile(path.resolve(distDir, outFilename), content, { encoding: 'utf8', flag: 'w' }, (err) => {
+        if (err) throw err;
+        console.log(`Generate ${outFilename} [webspot]`);
+      });
+    }
+  }
 }
 
 export default {
-  build,
+  build(config) {
+    function onError(err) {
+      console.log(err);
+      console.error(err.stack);
+      process.exit(1);
+    }  
+    (async () => {
+      await buildScript(config).catch(onError);
+      await buildStyle(config).catch(onError);
+      await buildConstants(config).catch(onError);
+      await buildJSON(config).catch(onError);
+    })();
+  }
 };
