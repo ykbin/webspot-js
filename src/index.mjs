@@ -9,8 +9,42 @@ import postcssMinify from '@csstools/postcss-minify';
 import postcssGlobalData from '@csstools/postcss-global-data';
 import postcssCustomProperties from 'postcss-custom-properties';
 
+//import postcssNested from 'postcss-nested';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+async function buildScript({script, buildType, binaryDir}) {
+  const distDir = path.join(binaryDir, "dist");
+
+  if (fs.existsSync(distDir))
+    fs.rmSync(distDir, {recursive: true});
+  fs.mkdirSync(distDir);
+
+  const isDevelopment = (buildType === "Debug");
+  for (const [ key, val ] of Object.entries(script.entry)) {
+    const params = {
+      mode: isDevelopment ? 'development' : 'production',
+      devtool: isDevelopment ? 'inline-source-map' : 'source-map',
+      entry: {},
+      output: {
+        filename: `${key}.bundle.js`,
+        path: distDir,
+      }
+    };
+
+    params.entry[key] = path.resolve(binaryDir, val);
+
+    const compiler = webpack(params);
+    compiler.run((err, res) => {
+      if (err) {
+        console.log(err);
+        throw err;
+      }
+      console.log("Generate converter.bundle.js");
+    });
+  }
+}
 
 async function buildStyle({style, buildType, binaryDir}) {
   const stylePlugins = [
@@ -73,6 +107,7 @@ function build(config) {
     process.exit(1);
   }  
   (async () => {
+    await buildScript(config).catch(onError);
     await buildStyle(config).catch(onError);
     await buildConstants(config).catch(onError);
   })();
