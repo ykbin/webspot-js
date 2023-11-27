@@ -23,69 +23,75 @@ async function buildScript({script, buildType, binaryDir}) {
     fs.rmSync(distDir, {recursive: true});
   fs.mkdirSync(distDir);
 
-  const isDevelopment = (buildType === "Debug");
-  for (const [ key, val ] of Object.entries(script.entry)) {
-    const filename = `${key}.bundle.js`;
-    const params = {
-      mode: isDevelopment ? 'development' : 'production',
-      devtool: isDevelopment ? 'inline-source-map' : 'source-map',
-      entry: {},
-      output: {
-        filename,
-        path: distDir,
-      }
-    };
-
-    params.entry[key] = path.resolve(binaryDir, val);
-
-    const compiler = webpack(params);
-    compiler.run((err, res) => {
-      if (err) {
-        console.log(err);
-        throw err;
-      }
-      console.log(`Generate ${filename} [webpack]`);
-    });
+  if (script && script.entry) {
+    const isDevelopment = (buildType === "Debug");
+    for (const [ key, val ] of Object.entries(script.entry)) {
+      const filename = `${key}.bundle.js`;
+      const params = {
+        mode: isDevelopment ? 'development' : 'production',
+        devtool: isDevelopment ? 'inline-source-map' : 'source-map',
+        entry: {},
+        output: {
+          filename,
+          path: distDir,
+        }
+      };
+  
+      params.entry[key] = path.resolve(binaryDir, val);
+  
+      const compiler = webpack(params);
+      compiler.run((err, res) => {
+        if (err) {
+          console.log(err);
+          throw err;
+        }
+        console.log(`Generate ${filename} [webpack]`);
+      });
+    }
   }
 }
 
 async function buildStyle({style, buildType, binaryDir}) {
-  const stylePlugins = [
-    postcssImport,
-    autoPrefixer,
-    postcssGlobalData({
-      files: [
-        style.prop,
-      ],
-    }),
-    postcssCustomProperties({
-      preserve: false
-    }),
-  ];
+  const distDir = path.join(binaryDir, "dist");
 
-  if (buildType !== "Debug")
-    stylePlugins.push(postcssMinify);
-
-  for (const [ key, val ] of Object.entries(style.entry)) {
-    const inFilepath = path.resolve(binaryDir, val);
-    fs.readFile(inFilepath, "utf-8", (err, content) => {
-      if (err) throw err;
-      const outFilename = `${key}.bundle.css`;
-      const outFullFilepath = path.resolve(binaryDir, 'dist', outFilename);
-      postcss(stylePlugins).process(content).then(result => {
-        fs.writeFile(outFullFilepath, result.css, () => true);
-        console.log(`Generate ${outFilename} [postcss]`);
-        if (result.map) {
-          fs.writeFile(`${outFullFilepath}.map`, result.map);
-          console.log(`Generate ${outFilename}.map  [postcss]`)
-        }
+  if (style && style.entry) {
+    const stylePlugins = [
+      postcssImport,
+      autoPrefixer,
+      postcssGlobalData({
+        files: [
+          style.prop,
+        ],
+      }),
+      postcssCustomProperties({
+        preserve: false
+      }),
+    ];
+  
+    if (buildType !== "Debug")
+      stylePlugins.push(postcssMinify);
+  
+    for (const [ key, val ] of Object.entries(style.entry)) {
+      const inFilepath = path.resolve(binaryDir, val);
+      fs.readFile(inFilepath, "utf-8", (err, content) => {
+        if (err) throw err;
+        const outFilename = `${key}.bundle.css`;
+        const outFullFilepath = path.resolve(distDir, outFilename);
+        postcss(stylePlugins).process(content).then(result => {
+          fs.writeFile(outFullFilepath, result.css, () => true);
+          console.log(`Generate ${outFilename} [postcss]`);
+          if (result.map) {
+            fs.writeFile(`${outFullFilepath}.map`, result.map);
+            console.log(`Generate ${outFilename}.map  [postcss]`)
+          }
+        });
       });
-    });
+    }
   }
 };
 
 async function buildConstants({script, sourceDir, binaryDir}) {
-  if (script.hasOwnProperty("const")) {
+  if (script && script.const) {
     const inFilename = path.resolve(sourceDir, script.const);
     const { default: constants } = await import(pathToFileURL(inFilename));
 
