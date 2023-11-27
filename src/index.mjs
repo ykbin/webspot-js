@@ -2,6 +2,8 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath, pathToFileURL } from 'url';
 
+import webpack from 'webpack';
+
 import postcss from 'postcss';
 import postcssImport from 'postcss-import';
 import autoPrefixer from 'autoprefixer';
