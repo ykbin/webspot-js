@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/yakubins/webspot-js#readme",
   "dependencies": {
+    "webpack": "^5.88.2",
     "postcss": "^8.4.31",
     "postcss-import": "^15.1.0",
     "autoprefixer": "^10.4.16",
