@@ -29,9 +29,9 @@ async function copyParamsIfDifferent(params, sourceDir, binaryDir) {
 
 async function configure({script, sourceDir, binaryDir}) {
   if (script) {
-    await copyParamsIfDifferent(script.entry);
-    await copyParamsIfDifferent(script.const);
-    await copyParamsIfDifferent(script.list);
+    for (const name of [ 'entry', 'const', 'list' ]) {
+      await copyParamsIfDifferent(script[name]);
+    }
   }
 }
 
