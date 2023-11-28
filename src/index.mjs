@@ -17,10 +17,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function preBuild(config) {
-  config.distDir = path.join(config.binaryDir, "dist");
+  const distDir = path.join(config.binaryDir, "dist");
+  
   if (fs.existsSync(distDir))
     fs.rmSync(distDir, {recursive: true});
   fs.mkdirSync(distDir);
+
+  config.distDir = distDir;
 }
 
 async function buildStyle({style, buildType, binaryDir, distDir}) {
