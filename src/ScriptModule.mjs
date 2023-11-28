@@ -2,34 +2,36 @@ import path from "node:path";
 import fs from "node:fs";
 import webpack from 'webpack';
 
-async function copyIfDifferent(filepath, sourceDir, binaryDir) {
+async function copyFileIfDifferent(filepath, sourceDir, binaryDir) {
   const fullpath = path.resolve(sourceDir, filepath);
   const stats = await fs.promises.stat(fullpath);
   console.log(">>>", filepath, stats);
 }
 
-async function configure({script, sourceDir, binaryDir}) {
-  if (script) {
+async function copyParamsIfDifferent(params, sourceDir, binaryDir) {
+  if (params) {
     const sources = [];
 
-    if (typeof script.entry === "object")
-      sources.push(...Object.values(script.entry));
-
-    if (typeof script.const === "string")
-      sources.push(script.const);
-
-    if (Array.isArray(script.const))
-      sources.push(...script.const);
-
-    if (typeof script.list === "string")
-      sources.push(script.list);
-
-    if (Array.isArray(script.list))
-      sources.push(...script.list);
+    if (Array.isArray(params))
+      sources.push(...params);
+    else if (typeof params === "object")
+      sources.push(...Object.values(params));
+    else if (typeof params === "string")
+      sources.push(params);
+    else
+      throw "Not support params type";
 
     for (const i in sources) {
-      await copyIfDifferent(sources[i], sourceDir, binaryDir);
+      await copyFileIfDifferent(sources[i], sourceDir, binaryDir);
     }
+  }
+}
+
+async function configure({script, sourceDir, binaryDir}) {
+  if (script) {
+    await copyParamsIfDifferent(script.entry);
+    await copyParamsIfDifferent(script.const);
+    await copyParamsIfDifferent(script.list);
   }
 }
 
