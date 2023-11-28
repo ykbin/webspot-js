@@ -2,7 +2,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath, pathToFileURL } from 'url';
 
-import webpack from 'webpack';
+import scriptModule from './ScriptModule.mjs';
 
 import postcss from 'postcss';
 import postcssImport from 'postcss-import';
@@ -16,44 +16,14 @@ import postcssCustomProperties from 'postcss-custom-properties';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function buildScript({script, buildType, binaryDir}) {
-  const distDir = path.join(binaryDir, "dist");
-
+async function preBuild(config) {
+  config.distDir = path.join(config.binaryDir, "dist");
   if (fs.existsSync(distDir))
     fs.rmSync(distDir, {recursive: true});
   fs.mkdirSync(distDir);
-
-  if (script && script.entry) {
-    const isDevelopment = (buildType === "Debug");
-    for (const [ key, val ] of Object.entries(script.entry)) {
-      const filename = `${key}.bundle.js`;
-      const params = {
-        mode: isDevelopment ? 'development' : 'production',
-        devtool: isDevelopment ? 'inline-source-map' : 'source-map',
-        entry: {},
-        output: {
-          filename,
-          path: distDir,
-        }
-      };
-  
-      params.entry[key] = path.resolve(binaryDir, val);
-  
-      const compiler = webpack(params);
-      compiler.run((err, res) => {
-        if (err) {
-          console.log(err);
-          throw err;
-        }
-        console.log(`Generate ${filename} [webpack]`);
-      });
-    }
-  }
 }
 
-async function buildStyle({style, buildType, binaryDir}) {
-  const distDir = path.join(binaryDir, "dist");
-
+async function buildStyle({style, buildType, binaryDir, distDir}) {
   if (style && style.entry) {
     const stylePlugins = [
       postcssImport,
@@ -109,9 +79,7 @@ async function buildConstants({script, sourceDir, binaryDir}) {
   }
 }
 
-async function buildJSON({json, sourceDir, binaryDir}) {
-  const distDir = path.join(binaryDir, "dist");
-
+async function buildJSON({json, sourceDir, binaryDir, distDir}) {
   if (json && json.list) {
     for (let i = 0; i < json.list.length; i++) {
       const inFilename = path.resolve(sourceDir, json.list[i]);
@@ -134,7 +102,10 @@ export default {
       process.exit(1);
     }  
     (async () => {
-      await buildScript(config).catch(onError);
+      await scriptModule.configure(config).catch(onError);
+
+      await preBuild(config);
+      await scriptModule.generate(config).catch(onError);
       await buildStyle(config).catch(onError);
       await buildConstants(config).catch(onError);
       await buildJSON(config).catch(onError);
