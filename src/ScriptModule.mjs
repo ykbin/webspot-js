@@ -7,8 +7,12 @@ async function copyFileIfDifferent(filepath, {sourceDir, binaryDir}) {
   const outFilename = path.resolve(binaryDir, filepath);
   const inStats = await fs.promises.stat(inFilename);
   const outStats = await fs.promises.stat(outFilename);
-  console.log(">>> 1", filepath, inStats);
-  console.log(">>> 2", filepath, outStats);
+  console.log(">>>", filepath, inStats.mtime, filepath, outStats.mtime);
+  if (inStats.mtime != outStats.mtime) {
+    console.log(">>> Copy", filepath);
+    await fs.promises.cp(inFilename, outFilename, {force:true});
+    await fs.promises.utimes(outFilename, inStats.atime, inStats.mtime);
+  }
 }
 
 async function copyParamsIfDifferent(params, {sourceDir, binaryDir}) {
