@@ -1,5 +1,6 @@
 import path from "node:path";
 import webpack from 'webpack';
+import { pathToFileURL } from 'url';
 import { copyParamsIfDifferent } from './Lib.mjs';
 
 async function configure({script, sourceDir, binaryDir}) {
