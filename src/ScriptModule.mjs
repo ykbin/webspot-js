@@ -46,7 +46,7 @@ async function buildJson({script, binaryDir, distDir}) {
 async function buildBundle({script, buildType, binaryDir, distDir}) {
   if (script && script.entry) {
     const isDevelopment = (buildType === "Debug");
-    for (const [ key, val ] of Object.entries(script.entry)) {
+    for (const [ key, entry ] of Object.entries(script.entry)) {
       const filename = `${key}.bundle.js`;
       const params = {
         mode: isDevelopment ? 'development' : 'production',
@@ -58,16 +58,21 @@ async function buildBundle({script, buildType, binaryDir, distDir}) {
         }
       };
   
-      params.entry[key] = path.resolve(binaryDir, val);
+      params.entry[key] = path.resolve(binaryDir, entry);
   
       const compiler = webpack(params);
-      compiler.run((err, res) => {
-        if (err) {
-          console.log(err);
-          throw err;
-        }
-        console.log(`[script.bundle] Generate ${filename}`);
+      await new Promise((resolve, reject) => {
+        compiler.run((err, res) => {
+          if (err) {
+            console.log(err);
+            reject(err);
+          }
+          else {
+            resolve();
+          }
+        });
       });
+      console.log(`[script.bundle] Generate ${filename}`);
     }
   }
 }

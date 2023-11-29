@@ -43,10 +43,10 @@ async function generate({style, buildType, binaryDir, distDir}) {
         const outFullFilepath = path.resolve(distDir, outFilename);
         postcss(stylePlugins).process(content, { from: entry, to: outFilename }).then(result => {
           fs.writeFile(outFullFilepath, result.css, () => true);
-          console.log(`[style] Generate ${outFilename}`);
+          console.log(`[style.bundle] Generate ${outFilename}`);
           if (result.map) {
             fs.writeFile(`${outFullFilepath}.map`, result.map);
-            console.log(`[style] Generate ${outFilename}.map`)
+            console.log(`[style.bundle] Generate ${outFilename}.map`)
           }
         });
       });
