@@ -10,7 +10,7 @@ async function copyFileIfDifferent(filepath, {sourceDir, binaryDir}) {
   let outStats = null;
   try { outStats = await fs.promises.stat(outFilename); } catch (e) { }
   if (outStats === null || inStats.mtime.getTime() !== outStats.mtime.getTime()) {
-    console.log(`Copy ${filepath} [configure]`);
+    console.log(`[configure] Copy ${filepath}`);
     await fs.promises.cp(inFilename, outFilename, {recursive: true});
     await fs.promises.utimes(outFilename, inStats.atime, inStats.mtime);
   }
@@ -66,7 +66,7 @@ async function generate({script, buildType, binaryDir, distDir}) {
           console.log(err);
           throw err;
         }
-        console.log(`Generate ${filename} [webpack]`);
+        console.log(`[script] Generate ${filename}`);
       });
     }
   }

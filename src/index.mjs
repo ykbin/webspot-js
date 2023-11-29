@@ -52,10 +52,10 @@ async function buildStyle({style, buildType, binaryDir, distDir}) {
         const outFullFilepath = path.resolve(distDir, outFilename);
         postcss(stylePlugins).process(content).then(result => {
           fs.writeFile(outFullFilepath, result.css, () => true);
-          console.log(`Generate ${outFilename} [postcss]`);
+          console.log(`[style] Generate ${outFilename}`);
           if (result.map) {
             fs.writeFile(`${outFullFilepath}.map`, result.map);
-            console.log(`Generate ${outFilename}.map  [postcss]`)
+            console.log(`[style] Generate ${outFilename}.map`)
           }
         });
       });
@@ -77,7 +77,7 @@ async function buildConstants({script, sourceDir, binaryDir}) {
     const outFilename = path.resolve(binaryDir, "Constans.h");
     fs.writeFile(outFilename, content, { encoding: 'utf8', flag: 'w' }, (err) => {
       if (err) throw err;
-      console.log("Generate Constans.h [webspot]");
+      console.log("[const] Generate Constans.h");
     }); 
   }
 }
@@ -91,7 +91,7 @@ async function buildJSON({json, sourceDir, binaryDir, distDir}) {
       const content = JSON.stringify(module);
       fs.writeFile(path.resolve(distDir, outFilename), content, { encoding: 'utf8', flag: 'w' }, (err) => {
         if (err) throw err;
-        console.log(`Generate ${outFilename} [webspot]`);
+        console.log(`[json] Generate ${outFilename}`);
       });
     }
   }
