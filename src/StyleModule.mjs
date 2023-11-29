@@ -35,13 +35,13 @@ async function generate({style, buildType, binaryDir, distDir}) {
     if (buildType !== "Debug")
       stylePlugins.push(postcssMinify);
   
-    for (const [ key, val ] of Object.entries(style.entry)) {
-      const inFilepath = path.resolve(binaryDir, val);
+    for (const [ key, entry ] of Object.entries(style.entry)) {
+      const inFilepath = path.resolve(binaryDir, entry);
       fs.readFile(inFilepath, "utf-8", (err, content) => {
         if (err) throw err;
         const outFilename = `${key}.bundle.css`;
         const outFullFilepath = path.resolve(distDir, outFilename);
-        postcss(stylePlugins).process(content).then(result => {
+        postcss(stylePlugins).process(content, { from: entry, to: outFilename }).then(result => {
           fs.writeFile(outFullFilepath, result.css, () => true);
           console.log(`[style] Generate ${outFilename}`);
           if (result.map) {
