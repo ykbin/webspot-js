@@ -62,15 +62,7 @@ async function buildBundle({script, buildType, binaryDir, distDir}) {
   
       const compiler = webpack(params);
       await new Promise((resolve, reject) => {
-        compiler.run((err, res) => {
-          if (err) {
-            console.log(err);
-            reject(err);
-          }
-          else {
-            resolve();
-          }
-        });
+        compiler.run((err, res) => err ? reject(err) : resolve(res));
       });
       console.log(`[script.bundle] Generate ${filename}`);
     }
