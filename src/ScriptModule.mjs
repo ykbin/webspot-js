@@ -3,9 +3,12 @@ import fs from "node:fs";
 import webpack from 'webpack';
 
 async function copyFileIfDifferent(filepath, {sourceDir, binaryDir}) {
-  const fullpath = path.resolve(sourceDir, filepath);
-  const stats = await fs.promises.stat(fullpath);
-  console.log(">>>", filepath, stats);
+  const inFilename = path.resolve(sourceDir, filepath);
+  const outFilename = path.resolve(binaryDir, filepath);
+  const inStats = await fs.promises.stat(inFilename);
+  const outStats = await fs.promises.stat(outFilename);
+  console.log(">>> 1", filepath, inStats);
+  console.log(">>> 2", filepath, outStats);
 }
 
 async function copyParamsIfDifferent(params, {sourceDir, binaryDir}) {
