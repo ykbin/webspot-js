@@ -24,10 +24,8 @@ async function buildConst({script, sourceDir, binaryDir}) {
     }
   
     const outFilename = path.resolve(binaryDir, "Constans.h");
-    fs.writeFile(outFilename, content, { encoding: 'utf8', flag: 'w' }, (err) => {
-      if (err) throw err;
-      console.log("[const] Generate Constans.h");
-    }); 
+    await fs.promises.writeFile(outFilename, content, { encoding: 'utf8', flag: 'w' });
+    console.log("[script.const] Generate Constans.h");
   }
 }
 
@@ -39,10 +37,8 @@ async function buildJson({script, binaryDir, distDir}) {
       const outFilename = path.basename(inFilename, '.mjs') + ".json";
       const { default: module } = await import(pathToFileURL(inFilename));
       const content = JSON.stringify(module);
-      fs.writeFile(path.resolve(distDir, outFilename), content, { encoding: 'utf8', flag: 'w' }, (err) => {
-        if (err) throw err;
-        console.log(`[script.json] Generate ${outFilename}`);
-      });
+      await fs.promises.writeFile(path.resolve(distDir, outFilename), content, { encoding: 'utf8', flag: 'w' });
+      console.log(`[script.json] Generate ${outFilename}`);
     }
   }
 }
