@@ -9,10 +9,10 @@ import postcssCustomProperties from 'postcss-custom-properties';
 // import postcssNested from 'postcss-nested';
 import { copyParamsIfDifferent } from './Lib.mjs';
 
-async function configure({script, sourceDir, binaryDir}) {
-  if (script) {
+async function configure({style, sourceDir, binaryDir}) {
+  if (style) {
     for (const name of [ 'entry', 'prop', 'list' ]) {
-      await copyParamsIfDifferent(script[name], {sourceDir, binaryDir});
+      await copyParamsIfDifferent(style[name], {sourceDir, binaryDir});
     }
   }
 }
