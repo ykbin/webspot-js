@@ -77,9 +77,9 @@ async function buildBundle({script, buildType, binaryDir, distDir}) {
 
 export default {
   configure,
-  generate(config) {
-    buildJson(config);
-    buildConst(config);
-    buildBundle(config);
+  async generate(config) {
+    await buildJson(config);
+    await buildConst(config);
+    await buildBundle(config);
   },
 };
