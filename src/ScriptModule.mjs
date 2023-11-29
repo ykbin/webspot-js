@@ -10,8 +10,8 @@ async function copyFileIfDifferent(filepath, {sourceDir, binaryDir}) {
   let outStats = null;
   try { outStats = await fs.promises.stat(outFilename); } catch (e) { }
   if (outStats === null || inStats.mtime.getTime() !== outStats.mtime.getTime()) {
-    console.log("Copy", filepath);
-    await fs.promises.cp(inFilename, outFilename, {force:true});
+    console.log(`Copy ${filepath} [configure]`);
+    await fs.promises.copyFile(inFilename, outFilename);
     await fs.promises.utimes(outFilename, inStats.atime, inStats.mtime);
   }
 }
