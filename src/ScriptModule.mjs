@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import webpack from 'webpack';
 import { pathToFileURL } from 'url';
