@@ -24,7 +24,7 @@ async function buildConst({script, sourceDir, binaryDir}) {
     }
   
     const outFilename = path.resolve(binaryDir, "Constans.h");
-    fs.writeFile(outFilename, content, { encoding: 'utf8', flag: 'w' }, (err) => {
+    fs.writeFile(outFilename, content, { encoding: 'utf8', flag: 'w' }, async (err) => {
       if (err) throw err;
       console.log("[const] Generate Constans.h");
     }); 
