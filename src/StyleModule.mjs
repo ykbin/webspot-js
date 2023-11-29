@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import postcss from 'postcss';
 import postcssImport from 'postcss-import';
