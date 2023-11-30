@@ -47,6 +47,7 @@ async function generate({style, buildType, binaryDir, distDir}) {
         await fs.promises.writeFile(`${outFullFilepath}.map`, result.map);
         console.log(`[style.bundle] Generate ${outFilename}.map`);
       }
+      await fs.promises.stat(outFullFilepath); // Sync with OS file system
     }
   }
 };
