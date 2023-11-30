@@ -64,11 +64,10 @@ async function buildBundle({script, buildType, binaryDir, distDir}) {
       await new Promise((resolve, reject) => {
         compiler.run((err, stats) => {
           if (!err && stats.hasErrors()) {
-            if (stats.compilation.errors) {
-              err = (stats.compilation.errors.length == 1) ? stats.compilation.errors[0] : stats.compilation.errors;
-            }
-            else {
-              err = stats;
+            switch (stats.compilation.errors.length) {
+            case 0: err = stats; break;
+            case 1: err = stats.compilation.errors[0]; break;
+            default: err = stats.compilation.errors; break;
             }
           }
           err ? reject(err) : resolve(stats);
