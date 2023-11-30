@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 
 import scriptModule from './ScriptModule.mjs';
 import styleModule from './StyleModule.mjs';
+import imageModule from './ImageModule.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,19 +21,26 @@ async function preBuild(config) {
 
 export default {
   build(config) {
+    const modules = [
+      styleModule,
+      scriptModule,
+      imageModule,
+    ];
     function onError(err) {
       console.log(err);
       console.error(err.stack);
       process.exit(1);
     }  
     (async () => {
-      await styleModule.configure(config).catch(onError);
-      await scriptModule.configure(config).catch(onError);
+      modules.forEach(async (module) => {
+        await module.configure(config).catch(onError)
+      });
 
       await preBuild(config);
 
-      await styleModule.generate(config).catch(onError);
-      await scriptModule.generate(config).catch(onError);
+      modules.forEach(async (module) => {
+        await module.generate(config).catch(onError)
+      });
     })();
   }
 };

@@ -1,5 +1,4 @@
-import fs from "node:fs";
-import path from "node:path";
+import { copyParamsIfDifferent } from './Lib.mjs';
 
 async function configure({image, sourceDir, distDir}) {
   if (image) {
