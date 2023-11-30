@@ -62,7 +62,17 @@ async function buildBundle({script, buildType, binaryDir, distDir}) {
   
       const compiler = webpack(params);
       await new Promise((resolve, reject) => {
-        compiler.run((err, stats) => err ? reject(err) : (stats.hasErrors() ? reject(stats.compilation.errors) : resolve(stats)));
+        compiler.run((err, stats) => {
+          if (!err || stats.hasErrors()) {
+            if (stats.compilation.errors) {
+              err = (stats.compilation.errors.length == 1) ? stats.compilation.errors[0] : stats.compilation.errors;
+            }
+            else {
+              err = stats;
+            }
+          }
+          err ? reject(err) : resolve(stats);
+        });
       });
       console.log(`[script.bundle] Generate ${filename}`);
     }
