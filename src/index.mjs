@@ -9,14 +9,15 @@ import imageModule from './ImageModule.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-async function preBuild(config) {
+async function preConfigure(config) {
   const distDir = path.join(config.binaryDir, "dist");
-  
+  config.distDir = distDir;
+}
+
+async function preGenerate({distDir}) {
   if (fs.existsSync(distDir))
     fs.rmSync(distDir, {recursive: true});
   fs.mkdirSync(distDir);
-
-  config.distDir = distDir;
 }
 
 export default {
@@ -32,15 +33,20 @@ export default {
       process.exit(1);
     }  
     (async () => {
+      await preConfigure(config);
+
       modules.forEach(async (module) => {
         await module.configure(config).catch(onError)
       });
 
-      await preBuild(config);
+      await preGenerate(config);
 
       modules.forEach(async (module) => {
         await module.generate(config).catch(onError)
       });
+
+      // make
+      // install
     })();
   }
 };
