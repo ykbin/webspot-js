@@ -50,12 +50,12 @@ const makeAgrsMap = (args, defaultArgMap) => {
 const [,, ...args] = process.argv;
 const argm = makeAgrsMap(args, {
   buildType: "Release",
-  sourceDir: __dirname,
+  sourceDir: process.cwd,
   binaryDir: process.cwd,
 });
 
 (async () => {
-  const configUrl = pathToFileURL(path.resolve(argm.binaryDir, "project.config.mjs"));
+  const configUrl = pathToFileURL(path.resolve(argm.sourceDir, "project.config.mjs"));
   const { default: projectConfig } = await import(configUrl);
   const config = Object.assign(projectConfig, argm);
   webspot.build(config);
