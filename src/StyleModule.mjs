@@ -7,7 +7,7 @@ import postcssMinify from '@csstools/postcss-minify';
 import postcssGlobalData from '@csstools/postcss-global-data';
 import postcssCustomProperties from 'postcss-custom-properties';
 // import postcssNested from 'postcss-nested';
-import { copyParamsIfDifferent } from './Lib.mjs';
+import { copyFileIfDifferent, getFilenamesFromParams } from './Lib.mjs';
 
 async function configure({style, sourceDir, binaryDir}) {
   const list = [];
