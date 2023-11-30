@@ -12,12 +12,13 @@ const __dirname = path.dirname(__filename);
 async function preConfigure(config) {
   const distDir = path.join(config.binaryDir, "dist");
   config.distDir = distDir;
-}
-
-async function preGenerate({distDir}) {
+  
   if (fs.existsSync(distDir))
     fs.rmSync(distDir, {recursive: true});
   fs.mkdirSync(distDir);
+}
+
+async function preGenerate({distDir}) {
 }
 
 export default {
@@ -35,15 +36,15 @@ export default {
     (async () => {
       await preConfigure(config);
 
-      modules.forEach(async (module) => {
-        await module.configure(config).catch(onError)
-      });
+      for (const module of modules) {
+        await module.configure(config).catch(onError);
+      }
 
       await preGenerate(config);
 
-      modules.forEach(async (module) => {
-        await module.generate(config).catch(onError)
-      });
+      for (const module of modules) {
+        await module.generate(config).catch(onError);
+      }
 
       // make
       // install

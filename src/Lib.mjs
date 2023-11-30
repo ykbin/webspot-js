@@ -2,9 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 export async function copyFileIfDifferent(filepath, {sourceDir, binaryDir, useBasename}) {
-  const inFilename = path.resolve(sourceDir, filepath);
-
   const relFilename = useBasename ? path.basename(filepath) : filepath;
+  
+  const inFilename = path.resolve(sourceDir, filepath);
   const outFilename = path.resolve(binaryDir, relFilename);
 
   const inStats = await fs.promises.stat(inFilename);
