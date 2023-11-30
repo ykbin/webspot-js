@@ -6,12 +6,11 @@ async function configure({image, sourceDir, distDir}) {
   for (const name of (image ? ['icon', 'logo', 'list'] : []))
     list.push(...getFilenamesFromParams(image[name]));
   console.log(">>> image", list);
-  for(const filename of list) {
-    const inParentPath = path.resolve(sourceDir, 'img');
-    const inFilename = path.resolve(sourceDir, filename);
-    const fname = path.relative(inParentPath, inFilename);
-    const outFilename = path.resolve(distDir, fname);
-    await copyFileIfDifferent(inFilename, outFilename);
+  for(const iter of list) {
+    const inDirname = path.resolve(sourceDir, 'img');
+    const inFilename = path.resolve(sourceDir, iter);
+    const filename = path.relative(inDirname, inFilename);
+    await copyFileIfDifferent(filename, inDirname, distDir);
   }
 }
 

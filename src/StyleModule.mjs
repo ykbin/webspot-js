@@ -11,13 +11,12 @@ import { copyFileIfDifferent, getFilenamesFromParams } from './Lib.mjs';
 
 async function configure({style, sourceDir, binaryDir}) {
   const list = [];
-  for (const name of (style ? ['entry', 'prop', 'list'] : []))
+  for (const name of (style ? ['entry', 'prop', 'list'] : [])) {
     list.push(...getFilenamesFromParams(style[name]));
+  }
   console.log(">>> style", list);
-  for(const filename of list) {
-    const inFilename = path.resolve(sourceDir, filename);
-    const outFilename = path.resolve(binaryDir, filename);
-    await copyFileIfDifferent(inFilename, outFilename);
+  for(const iter of list) {
+    await copyFileIfDifferent(iter, sourceDir, binaryDir);
   }
 }
 
