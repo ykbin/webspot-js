@@ -57,9 +57,9 @@ async function buildBundle({script, buildType, binaryDir, distDir}) {
           path: distDir,
         }
       };
-  
+
       params.entry[key] = path.resolve(binaryDir, entry);
-  
+
       const compiler = webpack(params);
       await new Promise((resolve, reject) => {
         compiler.run((err, stats) => {
