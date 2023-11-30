@@ -1,12 +1,6 @@
 import fs from "node:fs";
-import path from "node:path";
 
-export async function copyFileIfDifferent(filepath, {sourceDir, binaryDir, useBasename}) {
-  const relFilename = useBasename ? path.basename(filepath) : filepath;
-  
-  const inFilename = path.resolve(sourceDir, filepath);
-  const outFilename = path.resolve(binaryDir, relFilename);
-
+export async function copyFileIfDifferent(inFilename, outFilename) {
   const inStats = await fs.promises.stat(inFilename);
 
   let outStats = null;
@@ -18,21 +12,19 @@ export async function copyFileIfDifferent(filepath, {sourceDir, binaryDir, useBa
   }
 }
 
-export async function copyParamsIfDifferent(params, {sourceDir, binaryDir, useBasename}) {
-  if (params) {
-    const sources = [];
+export function getFilenamesFromParams(params) {
+  const result = [];
 
-    if (Array.isArray(params))
-      sources.push(...params);
-    else if (typeof params === "object")
-      sources.push(...Object.values(params));
-    else if (typeof params === "string")
-      sources.push(params);
-    else
-      throw "Not support params type";
+  if (!params)
+    /* nope */;
+  else if (Array.isArray(params))
+    result.push(...params);
+  else if (typeof params === "object")
+    result.push(...Object.values(params));
+  else if (typeof params === "string")
+    result.push(params);
+  else
+    throw "Not support params type";
 
-    for (const i in sources) {
-      await copyFileIfDifferent(sources[i], {sourceDir, binaryDir, useBasename});
-    }
-  }
+  return result;
 }

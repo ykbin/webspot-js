@@ -2,13 +2,17 @@ import fs from "node:fs";
 import path from "node:path";
 import webpack from 'webpack';
 import { pathToFileURL } from 'url';
-import { copyParamsIfDifferent } from './Lib.mjs';
+import { copyFileIfDifferent, getFilenamesFromParams } from './Lib.mjs';
 
 async function configure({script, sourceDir, binaryDir}) {
-  if (script) {
-    for (const name of [ 'entry', 'const', 'list', 'json' ]) {
-      await copyParamsIfDifferent(script[name], {sourceDir, binaryDir});
-    }
+  const list = [];
+  for (const name of (script ? ['entry', 'const', 'list', 'json'] : []))
+    list.push(...getFilenamesFromParams(script[name]));
+  console.log(">>> script", list);
+  for(const filename of list) {
+    const inFilename = path.resolve(sourceDir, filename);
+    const outFilename = path.resolve(binaryDir, filename);
+    await copyFileIfDifferent(inFilename, outFilename);
   }
 }
 

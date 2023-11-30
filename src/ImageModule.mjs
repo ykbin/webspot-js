@@ -1,10 +1,17 @@
-import { copyParamsIfDifferent } from './Lib.mjs';
+import path from "node:path";
+import { copyFileIfDifferent, getFilenamesFromParams } from './Lib.mjs';
 
 async function configure({image, sourceDir, distDir}) {
-  if (image) {
-    for (const name of [ 'icon', 'logo', 'list' ]) {
-      await copyParamsIfDifferent(image[name], {sourceDir, binaryDir: distDir, useBasename: true});
-    }
+  const list = [];
+  for (const name of (image ? ['icon', 'logo', 'list'] : []))
+    list.push(...getFilenamesFromParams(image[name]));
+  console.log(">>> image", list);
+  for(const filename of list) {
+    const inParentPath = path.resolve(sourceDir, 'img');
+    const inFilename = path.resolve(sourceDir, filename);
+    const fname = path.relative(inParentPath, inFilename);
+    const outFilename = path.resolve(distDir, fname);
+    await copyFileIfDifferent(inFilename, outFilename);
   }
 }
 

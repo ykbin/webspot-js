@@ -10,10 +10,14 @@ import postcssCustomProperties from 'postcss-custom-properties';
 import { copyParamsIfDifferent } from './Lib.mjs';
 
 async function configure({style, sourceDir, binaryDir}) {
-  if (style) {
-    for (const name of [ 'entry', 'prop', 'list' ]) {
-      await copyParamsIfDifferent(style[name], {sourceDir, binaryDir});
-    }
+  const list = [];
+  for (const name of (style ? ['entry', 'prop', 'list'] : []))
+    list.push(...getFilenamesFromParams(style[name]));
+  console.log(">>> style", list);
+  for(const filename of list) {
+    const inFilename = path.resolve(sourceDir, filename);
+    const outFilename = path.resolve(binaryDir, filename);
+    await copyFileIfDifferent(inFilename, outFilename);
   }
 }
 
