@@ -14,7 +14,6 @@ async function configure({style, sourceDir, binaryDir}) {
   for (const name of (style ? ['entry', 'prop', 'list'] : [])) {
     list.push(...getFilenamesFromParams(style[name]));
   }
-  console.log(">>> style", list);
   for(const iter of list) {
     await copyFileIfDifferent(iter, sourceDir, binaryDir);
   }

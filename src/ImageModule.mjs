@@ -5,7 +5,6 @@ async function configure({image, sourceDir, distDir}) {
   const list = [];
   for (const name of (image ? ['icon', 'logo', 'list'] : []))
     list.push(...getFilenamesFromParams(image[name]));
-  console.log(">>> image", list);
   for(const iter of list) {
     const inDirname = path.resolve(sourceDir, 'img');
     const inFilename = path.resolve(sourceDir, iter);

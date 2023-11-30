@@ -9,7 +9,6 @@ async function configure({script, sourceDir, binaryDir}) {
   for (const name of (script ? ['entry', 'const', 'list', 'json'] : [])) {
     list.push(...getFilenamesFromParams(script[name]));
   }
-  console.log(">>> script", list);
   for(const iter of list) {
     await copyFileIfDifferent(iter, sourceDir, binaryDir);
   }
