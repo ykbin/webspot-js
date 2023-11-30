@@ -37,19 +37,16 @@ async function generate({style, buildType, binaryDir, distDir}) {
   
     for (const [ key, entry ] of Object.entries(style.entry)) {
       const inFilepath = path.resolve(binaryDir, entry);
-      fs.readFile(inFilepath, "utf-8", (err, content) => {
-        if (err) throw err;
-        const outFilename = `${key}.bundle.css`;
-        const outFullFilepath = path.resolve(distDir, outFilename);
-        postcss(stylePlugins).process(content, { from: entry, to: outFilename }).then(result => {
-          fs.writeFile(outFullFilepath, result.css, () => true);
-          console.log(`[style.bundle] Generate ${outFilename}`);
-          if (result.map) {
-            fs.writeFile(`${outFullFilepath}.map`, result.map);
-            console.log(`[style.bundle] Generate ${outFilename}.map`)
-          }
-        });
-      });
+      const content = await fs.promises.readFile(inFilepath, "utf-8");
+      const outFilename = `${key}.bundle.css`;
+      const outFullFilepath = path.resolve(distDir, outFilename);
+      const result = await postcss(stylePlugins).process(content, { from: entry, to: outFilename });
+      await fs.promises.writeFile(outFullFilepath, result.css);
+      console.log(`[style.bundle] Generate ${outFilename}`);
+      if (result.map) {
+        await fs.promises.writeFile(`${outFullFilepath}.map`, result.map);
+        console.log(`[style.bundle] Generate ${outFilename}.map`);
+      }
     }
   }
 };
