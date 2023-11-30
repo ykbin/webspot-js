@@ -26,13 +26,13 @@ export default {
       process.exit(1);
     }  
     (async () => {
-      await scriptModule.configure(config).catch(onError);
       await styleModule.configure(config).catch(onError);
+      await scriptModule.configure(config).catch(onError);
 
       await preBuild(config);
 
-      await scriptModule.generate(config).catch(onError);
       await styleModule.generate(config).catch(onError);
+      await scriptModule.generate(config).catch(onError);
     })();
   }
 };
