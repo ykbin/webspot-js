@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from 'url';
 
+import domModule from './DomModule.mjs';
 import scriptModule from './ScriptModule.mjs';
 import styleModule from './StyleModule.mjs';
 import imageModule from './ImageModule.mjs';
@@ -12,6 +13,7 @@ const __dirname = path.dirname(__filename);
 async function preConfigure(config) {
   const distDir = path.join(config.binaryDir, "dist");
   config.distDir = distDir;
+  config.isDebug = (config.buildType === "Debug");
   
   if (fs.existsSync(distDir))
     fs.rmSync(distDir, {recursive: true});
@@ -24,6 +26,7 @@ async function preGenerate({distDir}) {
 export default {
   build(config) {
     const modules = [
+      domModule,
       styleModule,
       scriptModule,
       imageModule,

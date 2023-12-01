@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/yakubins/webspot-js#readme",
   "dependencies": {
+    "jsdom": "^23.0.1",
     "webpack": "^5.88.2",
     "postcss": "^8.4.31",
     "postcss-import": "^15.1.0",
