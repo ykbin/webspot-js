@@ -10,7 +10,11 @@ async function configure({script, sourceDir, binaryDir}) {
     list.push(...getFilenamesFromParams(script[name]));
   }
   for(const iter of list) {
-    await copyFileIfDifferent(iter, sourceDir, binaryDir);
+    const inFilename = path.resolve(sourceDir, iter);
+    const outFilename = path.resolve(binaryDir, iter);
+    if (await copyFileIfDifferent(inFilename, outFilename)) {
+      console.log(`[script.configure] Copy ${iter}`);
+    }
   }
 }
 
@@ -31,7 +35,7 @@ async function buildConst({script, sourceDir, binaryDir}) {
   }
 }
 
-async function buildJson({script, binaryDir, distDir}) {
+async function buildJson({script, binaryDir, writeAsset}) {
   if (script.json) {
     const arr = (typeof script.json === "string") ? [ script.json ] : script.json; 
     for (let i = 0; i < arr.length; i++) {
@@ -39,20 +43,19 @@ async function buildJson({script, binaryDir, distDir}) {
       const outFilename = path.basename(inFilename, '.mjs') + ".json";
       const { default: module } = await import(pathToFileURL(inFilename));
       const content = JSON.stringify(module);
-      await fs.promises.writeFile(path.resolve(distDir, outFilename), content, { encoding: 'utf8', flag: 'w' });
+      await writeAsset(outFilename, "application/json", content);
       console.log(`[script.json] Generate ${outFilename}`);
     }
   }
 }
 
-async function buildBundle({script, buildType, binaryDir, distDir}) {
+async function buildBundle({script, isDebug, binaryDir, distDir}) {
   if (script && script.entry) {
-    const isDevelopment = (buildType === "Debug");
     for (const [ key, entry ] of Object.entries(script.entry)) {
       const filename = `${key}.bundle.js`;
       const params = {
-        mode: isDevelopment ? 'development' : 'production',
-        devtool: isDevelopment ? 'inline-source-map' : 'source-map',
+        mode: isDebug ? 'development' : 'production',
+        devtool: isDebug ? 'inline-source-map' : 'source-map',
         entry: {},
         output: {
           filename,
@@ -63,6 +66,13 @@ async function buildBundle({script, buildType, binaryDir, distDir}) {
       params.entry[key] = path.resolve(binaryDir, entry);
 
       const compiler = webpack(params);
+
+      const writeFileOrigin = compiler.outputFileSystem.writeFile;
+      compiler.outputFileSystem.writeFile = function() {
+        console.log(">>>", arguments);
+        writeFileOrigin.apply(this, arguments);
+      };
+
       await new Promise((resolve, reject) => {
         compiler.run((err, stats) => {
           if (!err && stats.hasErrors()) {

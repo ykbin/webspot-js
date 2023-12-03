@@ -9,7 +9,10 @@ async function configure({image, sourceDir, distDir}) {
     const inDirname = path.resolve(sourceDir, 'img');
     const inFilename = path.resolve(sourceDir, iter);
     const filename = path.relative(inDirname, inFilename);
-    await copyFileIfDifferent(filename, inDirname, distDir);
+    const outFilename = path.resolve(distDir, filename);
+    if (await copyFileIfDifferent(inFilename, outFilename)) {
+      console.log(`[image.configure] Copy ${iter}`);
+    }
   }
 }
 

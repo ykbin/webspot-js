@@ -15,11 +15,15 @@ async function configure({style, sourceDir, binaryDir}) {
     list.push(...getFilenamesFromParams(style[name]));
   }
   for(const iter of list) {
-    await copyFileIfDifferent(iter, sourceDir, binaryDir);
+    const inFilename = path.resolve(sourceDir, iter);
+    const outFilename = path.resolve(binaryDir, iter);
+    if (await copyFileIfDifferent(inFilename, outFilename)) {
+      console.log(`[style.configure] Copy ${iter}`);
+    }
   }
 }
 
-async function generate({style, buildType, binaryDir, distDir}) {
+async function generate({style, buildType, binaryDir, writeAsset}) {
   if (style && style.entry) {
     const stylePlugins = [
       postcssImport,
@@ -41,12 +45,11 @@ async function generate({style, buildType, binaryDir, distDir}) {
       const inFilepath = path.resolve(binaryDir, entry);
       const content = await fs.promises.readFile(inFilepath, "utf-8");
       const outFilename = `${key}.bundle.css`;
-      const outFullFilepath = path.resolve(distDir, outFilename);
       const result = await postcss(stylePlugins).process(content, { from: entry, to: outFilename });
-      await fs.promises.writeFile(outFullFilepath, result.css);
+      writeAsset(outFilename, "text/css", result.css);
       console.log(`[style.bundle] Generate ${outFilename}`);
       if (result.map) {
-        await fs.promises.writeFile(`${outFullFilepath}.map`, result.map);
+        writeAsset(`${outFilename}.map`, "text/css", result.map);
         console.log(`[style.bundle] Generate ${outFilename}.map`);
       }
     }

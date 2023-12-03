@@ -1,19 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export async function copyFileIfDifferent(filename, inDirname, outDirname) {
-  const inFilename = path.resolve(inDirname, filename);
-  const outFilename = path.resolve(outDirname, filename);
-
+export async function copyFileIfDifferent(inFilename, outFilename) {
   const inStats = await fs.promises.stat(inFilename);
 
   let outStats = null;
   try { outStats = await fs.promises.stat(outFilename); } catch (e) { }
   if (outStats === null || inStats.mtime.getTime() !== outStats.mtime.getTime()) {
-    console.log(`[configure] Copy ${filename}`);
     await fs.promises.cp(inFilename, outFilename, {recursive: true});
     await fs.promises.utimes(outFilename, inStats.atime, inStats.mtime);
+    return true;
   }
+  
+  return false;
 }
 
 export function getFilenamesFromParams(params) {
