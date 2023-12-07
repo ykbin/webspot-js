@@ -43,36 +43,41 @@ async function buildJson({script, binaryDir, writeAsset}) {
       const outFilename = path.basename(inFilename, '.mjs') + ".json";
       const { default: module } = await import(pathToFileURL(inFilename));
       const content = JSON.stringify(module);
-      await writeAsset(outFilename, "application/json", content);
+      await writeAsset(outFilename, content, {type: "application/json"});
       console.log(`[script.json] Generate ${outFilename}`);
     }
   }
 }
 
-async function buildBundle({script, isDebug, binaryDir, distDir}) {
+async function buildBundle({script, isDebug, binaryDir, distDir, addAsset}) {
   if (script && script.entry) {
     for (const [ key, entry ] of Object.entries(script.entry)) {
       const filename = `${key}.bundle.js`;
-      const params = {
-        mode: isDebug ? 'development' : 'production',
-        devtool: isDebug ? 'inline-source-map' : 'source-map',
-        entry: {},
+
+      const debugParams = {
+        mode: 'development',
+        devtool: 'source-map',
+        output: {
+          filename,
+          sourceMapFilename: `${filename}.map`,
+          path: distDir,
+        }
+      };
+
+      const releaseParams = {
+        mode: 'production',
         output: {
           filename,
           path: distDir,
         }
       };
 
+      const params = isDebug ? debugParams : releaseParams;
+
+      params.entry = {};
       params.entry[key] = path.resolve(binaryDir, entry);
 
       const compiler = webpack(params);
-
-      const writeFileOrigin = compiler.outputFileSystem.writeFile;
-      compiler.outputFileSystem.writeFile = function() {
-        console.log(">>>", arguments);
-        writeFileOrigin.apply(this, arguments);
-      };
-
       await new Promise((resolve, reject) => {
         compiler.run((err, stats) => {
           if (!err && stats.hasErrors()) {
@@ -85,6 +90,13 @@ async function buildBundle({script, isDebug, binaryDir, distDir}) {
           err ? reject(err) : resolve(stats);
         });
       });
+
+      addAsset(filename);
+      if (params.output.sourceMapFilename)
+        addAsset(params.output.sourceMapFilename);
+      if (!isDebug)
+        addAsset(`${filename}.LICENSE.txt`);
+      
       console.log(`[script.bundle] Generate ${filename}`);
     }
   }

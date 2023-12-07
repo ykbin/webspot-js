@@ -30,6 +30,30 @@ function makeFilename(type, length) {
   return result;
 }
 
+function isEqualValue(a, b) {
+  if (typeof a !== 'object')
+    return Object.is(a, b);
+  else if (typeof b !== 'object')
+    return false;
+  else if (a === b)
+    return true;
+  else if (!a || !b)
+    return false;
+
+  const k1 = Object.keys(a);
+  const k2 = Object.keys(b);
+
+  if (k1.length !== k2.length)
+    return false;
+
+  for (const key of k1) {
+    if (!isEqualValue(a[key], b[key]))
+      return false;
+  }
+
+  return true;
+}
+
 async function preConfigure(config) {
   const distDir = path.join(config.binaryDir, "dist");
   config.distDir = distDir;
@@ -41,18 +65,43 @@ async function preConfigure(config) {
     resources: [],
   };
 
-  config.writeAsset = async (src, type, content) => {
-    const item = src.startsWith("/") ? { alias: src, path: makeFilename(type, 8) } : { path: src };
+  const addAssetItem = (item) => {
+    for (const iter of assets.resources) {
+      if (isEqualValue(iter, item))
+        return false;
+    }
     assets.resources.push(item);
-    const filename = path.resolve(distDir, item.path);
+    return true;
+  }
+
+  config.addAsset = (src) => {
+    src = src.replace(/\\/g, "/");
+    addAssetItem({ path: src });
+  };
+
+  config.writeAsset = async (src, content, options) => {
+    const pathStr = src.replace(/\\/g, "/");
+    if (options.alias) {
+      for (const iter of options.alias)
+      addAssetItem({ alias: iter, path: pathStr });
+    }
+    else {
+      addAssetItem({ path: pathStr });
+    }
+
+    const filename = path.resolve(distDir, src);
     await fs.promises.writeFile(filename, content, { encoding: 'utf8', flag: 'w' });
   };
 
   config.flushAsset = async () => {
     const content = JSON.stringify(assets);
-    await fs.promises.writeFile(path.resolve(distDir, 'WebModuleConfig.json'), content, { encoding: 'utf8', flag: 'w' });
-    console.log(`[asset.json] Generate WebModuleConfig.json`);
-  }
+    await fs.promises.writeFile(path.resolve(distDir, 'WebAssetConfig.json'), content, { encoding: 'utf8', flag: 'w' });
+    console.log(`[asset.json] Generate WebAssetConfig.json`);
+  };
+
+  config.setApplication = (application) => {
+    assets.application = application;
+  };
   
   if (fs.existsSync(distDir))
     fs.rmSync(distDir, {recursive: true});

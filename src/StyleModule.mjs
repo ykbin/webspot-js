@@ -46,10 +46,10 @@ async function generate({style, buildType, binaryDir, writeAsset}) {
       const content = await fs.promises.readFile(inFilepath, "utf-8");
       const outFilename = `${key}.bundle.css`;
       const result = await postcss(stylePlugins).process(content, { from: entry, to: outFilename });
-      writeAsset(outFilename, "text/css", result.css);
+      writeAsset(outFilename, result.css, {type: "text/css"});
       console.log(`[style.bundle] Generate ${outFilename}`);
       if (result.map) {
-        writeAsset(`${outFilename}.map`, "text/css", result.map);
+        writeAsset(`${outFilename}.map`, result.map, {type: "text/plain"});
         console.log(`[style.bundle] Generate ${outFilename}.map`);
       }
     }

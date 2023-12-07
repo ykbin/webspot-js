@@ -13,7 +13,7 @@ function getOptions(params) {
   return Object.assign(defaultOptions, params);
 }
 
-async function configure({dom, baseUrl, sourceDir, distDir}) {
+async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
   if (!dom) return;
   for (const [ name, params ] of Object.entries(dom.targets)) {
     params.output = params.output || {};
@@ -28,6 +28,8 @@ async function configure({dom, baseUrl, sourceDir, distDir}) {
 
       const inFilename = path.resolve(sourceDir, icon);
       const outFilename = path.resolve(distDir, filename);
+
+      addAsset(filename);
       if (await copyFileIfDifferent(inFilename, outFilename))
         console.log(`[dom.configure] Copy ${icon}`);
       
@@ -36,10 +38,10 @@ async function configure({dom, baseUrl, sourceDir, distDir}) {
   }
 }
 
-async function generate({dom, isDebug, sourceDir, distDir}) {
+async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, addAsset, setApplication}) {
   if (!dom) return;
   for (const [ name, params ] of Object.entries(dom.targets)) {
-    const { entry, title, description, alias, hasMeta, output } = getOptions(params);
+    const { entry, alias, title, description, hasMeta, output } = getOptions(params);
     const inFilename = path.resolve(sourceDir, entry);
     const outFilename = path.resolve(distDir, output.filename);
     const dom = await JSDOM.fromFile(inFilename, {});
@@ -88,8 +90,63 @@ async function generate({dom, isDebug, sourceDir, distDir}) {
       document.head.insertBefore(fragment, document.head.firstChild);
     }
 
+    let options = {
+      type: "text/html",
+    };
+
+    const toUrlString = (pathStr) => {
+      return pathStr.startsWith("/") ? pathStr : path.posix.join(baseUrl, pathStr);
+    }
+
+    if (typeof alias === "string")
+      options.alias = [ toUrlString(alias) ];
+    else if (alias) {
+      options.alias = [];
+      for (const iter of alias) {
+        options.alias.push(toUrlString(iter));
+      }
+    }
+
+    if (params.application) {
+      const application = {
+        title,
+        main: output.filename, // DELME: options.alias ? options.alias[0] : output.filename,
+        description,
+      };
+
+      if (params.application.icon) {
+        const pathStr = params.application.icon;
+        const filename = path.basename(pathStr);
+
+        const inFilename = path.resolve(sourceDir, pathStr);
+        const outFilename = path.resolve(distDir, filename);
+  
+        addAsset(filename);
+        if (await copyFileIfDifferent(inFilename, outFilename))
+          console.log(`[dom.configure] Copy ${filename}`);
+        
+          application.icon = filename;
+      }
+
+      if (params.application.logo) {
+        const pathStr = params.application.logo;
+        const filename = path.basename(pathStr);
+
+        const inFilename = path.resolve(sourceDir, pathStr);
+        const outFilename = path.resolve(distDir, filename);
+  
+        addAsset(filename);
+        if (await copyFileIfDifferent(inFilename, outFilename))
+          console.log(`[dom.configure] Copy ${filename}`);
+        
+          application.logo = filename;
+      }
+
+      setApplication(application);
+    }
+
     const html = dom.serialize();
-    await fs.promises.writeFile(outFilename, html, { encoding: "utf8", flag: "w" });
+    await writeAsset(output.filename, html, options);
     console.log(`[dom.bundle] Generate ${output.filename}`);
   }
 };
