@@ -6,6 +6,7 @@ import domModule from './DomModule.mjs';
 import scriptModule from './ScriptModule.mjs';
 import styleModule from './StyleModule.mjs';
 import imageModule from './ImageModule.mjs';
+import resourceModule from './ResourceModule.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -118,6 +119,7 @@ export default {
       styleModule,
       scriptModule,
       imageModule,
+      resourceModule,
     ];
     function onError(err) {
       console.log(err);
