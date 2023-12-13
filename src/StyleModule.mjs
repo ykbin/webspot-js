@@ -9,6 +9,37 @@ import postcssCustomProperties from 'postcss-custom-properties';
 // import postcssNested from 'postcss-nested';
 import { copyFileIfDifferent, getFilenamesFromParams } from './Lib.mjs';
 
+async function process({ from, to, prop, isDebug, workDir, writeAsset }) {
+  const propFiles = prop ? [ path.join(workDir, prop) ] : [];
+  const stylePlugins = [
+    postcssImport({
+      path: [ workDir ],
+    }),
+    autoPrefixer,
+    postcssGlobalData({
+      files: propFiles,
+    }),
+    postcssCustomProperties({
+      preserve: false
+    }),
+  ];
+
+  if (!isDebug)
+    stylePlugins.push(postcssMinify);
+
+  const inFilepath = path.resolve(workDir, from);
+  const content = await fs.promises.readFile(inFilepath, "utf-8");
+  const result = await postcss(stylePlugins).process(content, { from, to });
+
+  writeAsset(to, result.css, {type: "text/css"});
+  console.log(`[style.bundle] Generate ${to}`);
+
+  if (result.map) {
+    writeAsset(`${to}.map`, result.map, {type: "text/plain"});
+    console.log(`[style.bundle] Generate ${to}.map`);
+  }
+}
+
 async function configure({style, sourceDir, binaryDir}) {
   const list = [];
   for (const name of (style ? ['entry', 'prop', 'list'] : [])) {
@@ -59,4 +90,5 @@ async function generate({style, buildType, binaryDir, writeAsset}) {
 export default {
   configure,
   generate,
+  process,
 };
