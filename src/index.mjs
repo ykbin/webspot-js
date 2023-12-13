@@ -10,26 +10,6 @@ import imageModule from './ImageModule.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-function makeFilename(type, length) {
-  const map  = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += map.charAt(Math.floor(Math.random() * map.length));
-  }
-
-  switch (type) {
-  case "text/html":
-    return result + ".html";
-  case "text/css":
-    return result + ".css";
-  case "application/json":
-    return result + ".json";
-  }
-
-  return result;
-}
-
 function isEqualValue(a, b) {
   if (typeof a !== 'object')
     return Object.is(a, b);

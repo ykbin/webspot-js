@@ -3,6 +3,7 @@ import path from "node:path";
 import jsdom from "jsdom";
 
 import { copyFileIfDifferent } from './Lib.mjs';
+import styleModule from './StyleModule.mjs';
 
 const { JSDOM } = jsdom;
 
@@ -35,13 +36,23 @@ async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
       
       return { href }
     })();
+
+    params.style = params.style || null;
+    if (typeof params.style === 'string') {
+      params.style = {
+        entry: params.style,
+      };
+    }
+    if (dom.options && dom.options.style) {
+      params.style = params.style ? Object.assign(dom.options.style, params.style) : dom.options.style;
+    }
   }
 }
 
 async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, addAsset, setApplication}) {
   if (!dom) return;
   for (const [ name, params ] of Object.entries(dom.targets)) {
-    const { entry, alias, title, description, hasMeta, output } = getOptions(params);
+    const { entry, alias, title, description, hasMeta, output, style } = getOptions(params);
     const inFilename = path.resolve(sourceDir, entry);
     const outFilename = path.resolve(distDir, output.filename);
     const dom = await JSDOM.fromFile(inFilename, {});
@@ -87,7 +98,39 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         fragment.appendChild(linkElm);
       }
 
+      if (style)
+      {
+        const filename = `${name}.bundle.css`;
+        await styleModule.process({
+          from: style.entry,
+          to: filename,
+          prop: style.prop,
+          isDebug,
+          workDir: sourceDir,
+          writeAsset
+        });
+
+        const linkElm = document.createElement('link');
+        linkElm.setAttribute("rel", "stylesheet");
+        linkElm.setAttribute("type", "text/css");
+        linkElm.setAttribute("href", path.posix.join(baseUrl, filename));
+        fragment.appendChild(linkElm);
+      }
+  
       document.head.insertBefore(fragment, document.head.firstChild);
+    }
+
+    // controls
+    {
+      const elements = Array.from(document.getElementsByTagName("webctl"));
+      for (const iter of elements) {
+        const pkg = iter.getAttribute("pkg");
+        const module = await import(`${pkg}/provider`);
+        const name = iter.getAttribute("ctl");
+        const ctl = module[name];
+        const control = ctl.create(document, iter.id);
+        iter.replaceWith(control.element);
+      }
     }
 
     let options = {
