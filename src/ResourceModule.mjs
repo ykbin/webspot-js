@@ -2,6 +2,9 @@ import path from "node:path";
 import { copyFileIfDifferent } from './Lib.mjs';
 
 async function configure({resource, sourceDir, distDir, addAsset}) {
+  if (!resource)
+    return;
+
   for(const iter of resource) {
     const inFilename = path.resolve(sourceDir, iter);
     const outFilename = path.resolve(distDir, iter);
@@ -13,8 +16,8 @@ async function configure({resource, sourceDir, distDir, addAsset}) {
 }
 
 async function generate({resource}) {
-  if (resource) {
-  }
+  if (!resource)
+    return;
 };
 
 export default {
