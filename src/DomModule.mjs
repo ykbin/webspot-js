@@ -1,8 +1,8 @@
-import fs from "node:fs";
 import path from "node:path";
 import jsdom from "jsdom";
 
 import { copyFileIfDifferent } from './Lib.mjs';
+import styleModule from './StyleModule.mjs';
 
 const { JSDOM } = jsdom;
 
@@ -35,15 +35,24 @@ async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
       
       return { href }
     })();
+
+    if (params.style || (dom.options && dom.options.style)) {
+      const globalStyle = (dom.options && dom.options.style) ? dom.options.style : {};
+      const localStyle = (typeof params.style === 'string') ? { entry: params.style } : (params.style || {});
+      params.style = Object.assign({}, globalStyle, localStyle);
+    }
   }
 }
 
 async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, addAsset, setApplication}) {
   if (!dom) return;
   for (const [ name, params ] of Object.entries(dom.targets)) {
-    const { entry, alias, title, description, hasMeta, output } = getOptions(params);
+    const { entry, alias, title, description, hasMeta, output, style } = getOptions(params);
     const inFilename = path.resolve(sourceDir, entry);
-    const outFilename = path.resolve(distDir, output.filename);
+
+    const cssFilename = `${name}.bundle.css`;
+    const cssOptionList = [];
+
     const dom = await JSDOM.fromFile(inFilename, {});
 
     const document = dom.window.document;
@@ -87,7 +96,64 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         fragment.appendChild(linkElm);
       }
 
+      if (style)
+      {
+        cssOptionList.push({
+          from: style.entry,
+          to: cssFilename,
+          prop: style.prop,
+          isDebug,
+          workDir: sourceDir,
+          isInlineSvg: false,
+        });
+
+        const linkElm = document.createElement('link');
+        linkElm.setAttribute("rel", "stylesheet");
+        linkElm.setAttribute("type", "text/css");
+        linkElm.setAttribute("href", path.posix.join(baseUrl, cssFilename));
+        fragment.appendChild(linkElm);
+      }
+  
       document.head.insertBefore(fragment, document.head.firstChild);
+    }
+
+    // controls
+    {
+      const cssMap = {};
+      const elements = Array.from(document.getElementsByTagName("webctl"));
+      for (const iter of elements) {
+        const pkg = iter.getAttribute("pkg");
+        const module = await import(`${pkg}/provider`);
+        const name = iter.getAttribute("ctl");
+        const ctl = module[name];
+        const control = ctl.create(document, iter.id);
+        iter.replaceWith(control.element);
+
+        if (!(pkg in cssMap))
+          cssMap[pkg] = {};
+        
+        if (!(name in cssMap[pkg])) {
+          cssOptionList.push({
+            from: ctl.styleEntry,
+            to: cssFilename,
+            prop: ctl.prop,
+            isDebug,
+            workDir: ctl.path,
+            isInlineSvg: true,
+          });
+        }
+      }
+    }
+
+    const cssResult = [];
+    for (const options of cssOptionList) {
+      const cssText = await styleModule.process(options);
+      cssResult.push(cssText);
+    }
+
+    if (cssResult) {
+      writeAsset(cssFilename, cssResult.join(""), {type: "text/css"});
+      console.log(`[style.bundle] Generate ${cssFilename}`);
     }
 
     let options = {
