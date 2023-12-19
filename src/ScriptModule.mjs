@@ -6,7 +6,7 @@ import { copyFileIfDifferent, getFilenamesFromParams } from './Lib.mjs';
 
 async function configure({script, sourceDir, binaryDir}) {
   const list = [];
-  for (const name of (script ? ['entry', 'const', 'list', 'json'] : [])) {
+  for (const name of (script ? ['entry', 'list'] : [])) {
     list.push(...getFilenamesFromParams(script[name]));
   }
   for(const iter of list) {
@@ -35,11 +35,11 @@ async function buildConst({script, sourceDir, binaryDir}) {
   }
 }
 
-async function buildJson({script, binaryDir, writeAsset}) {
-  if (script.json) {
+async function buildJson({script, sourceDir, writeAsset}) {
+  if (script && script.json) {
     const arr = (typeof script.json === "string") ? [ script.json ] : script.json; 
     for (let i = 0; i < arr.length; i++) {
-      const inFilename = path.resolve(binaryDir, arr[i]);
+      const inFilename = path.resolve(sourceDir, arr[i]);
       const outFilename = path.basename(inFilename, '.mjs') + ".json";
       const { default: module } = await import(pathToFileURL(inFilename));
       const content = JSON.stringify(module);
@@ -47,6 +47,68 @@ async function buildJson({script, binaryDir, writeAsset}) {
       console.log(`[script.json] Generate ${outFilename}`);
     }
   }
+}
+
+async function processScript({ from, to, isDebug, workDir, distDir, addAsset }) {
+  const entry = from;
+  const filename = to;
+
+  const defaultParams = {
+    resolve: {
+      modules: [
+        path.join(process.cwd(), 'node_modules')
+      ],
+    },
+  }
+
+  const debugParams = {
+    ...defaultParams,
+    mode: 'development',
+    devtool: 'source-map',
+    output: {
+      sourceMapFilename: `${filename}.map`,
+      path: distDir,
+    },
+  };
+
+  const releaseParams = {
+    ...defaultParams,
+    mode: 'production',
+    output: {
+      path: distDir,
+    },
+  };
+
+  const params = isDebug ? debugParams : releaseParams;
+
+  params.entry = {
+    index: {
+      import: path.join(workDir, entry),
+      filename,
+    },
+  };
+
+  const compiler = webpack(params);
+  await new Promise((resolve, reject) => {
+    compiler.run((err, stats) => {
+      if (!err && stats.hasErrors()) {
+        switch (stats.compilation.errors.length) {
+        case 0: err = stats; break;
+        case 1: err = stats.compilation.errors[0]; break;
+        default: err = stats.compilation.errors; break;
+        }
+      }
+      err ? reject(err) : resolve(stats);
+    });
+  });
+
+  addAsset(filename);
+  if (params.output.sourceMapFilename)
+    addAsset(params.output.sourceMapFilename);
+  if (!isDebug)
+    addAsset(`${filename}.LICENSE.txt`);
+  
+  console.log(`[script.bundle] Generate ${filename}`);
 }
 
 async function buildBundle({script, isDebug, binaryDir, distDir, addAsset}) {
@@ -109,4 +171,5 @@ export default {
     await buildConst(config);
     await buildBundle(config);
   },
+  processScript,
 };
