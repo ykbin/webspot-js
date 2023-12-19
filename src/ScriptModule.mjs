@@ -163,5 +163,5 @@ export default {
     await buildConst(config);
     await buildBundle(config);
   },
-  process,
+  processScript,
 };
