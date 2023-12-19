@@ -57,7 +57,6 @@ async function process({ from, to, isDebug, workDir, distDir, addAsset }) {
     mode: 'development',
     devtool: 'source-map',
     output: {
-      filename,
       sourceMapFilename: `${filename}.map`,
       path: distDir,
     }
@@ -66,15 +65,18 @@ async function process({ from, to, isDebug, workDir, distDir, addAsset }) {
   const releaseParams = {
     mode: 'production',
     output: {
-      filename,
       path: distDir,
     }
   };
 
   const params = isDebug ? debugParams : releaseParams;
 
-  params.entry = {};
-  params.entry[key] = path.resolve(workDir, entry);
+  params.entry = {
+    index: {
+      import: path.resolve(workDir, entry),
+      filename,
+    },
+  };
 
   const compiler = webpack(params);
   await new Promise((resolve, reject) => {
