@@ -55,7 +55,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset }) 
 
   const defaultParams = {
     resolve: {
-      modules: [ process.cwd() ],
+      modules: [ path.join(process.cwd(), 'node_modules') ],
     },
   }
 
