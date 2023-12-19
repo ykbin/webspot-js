@@ -68,11 +68,6 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
 
     // head
     {
-      if (!document.head) {
-        const headElm = document.createElement('head');
-        document.documentElement.insertBefore(headElm, document.documentElement.firstChild);
-      }
-
       const fragment = document.createDocumentFragment();
 
       if (isDebug) {
