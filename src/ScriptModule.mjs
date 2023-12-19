@@ -35,11 +35,11 @@ async function buildConst({script, sourceDir, binaryDir}) {
   }
 }
 
-async function buildJson({script, binaryDir, writeAsset}) {
+async function buildJson({script, sourceDir, writeAsset}) {
   if (script && script.json) {
     const arr = (typeof script.json === "string") ? [ script.json ] : script.json; 
     for (let i = 0; i < arr.length; i++) {
-      const inFilename = path.resolve(binaryDir, arr[i]);
+      const inFilename = path.resolve(sourceDir, arr[i]);
       const outFilename = path.basename(inFilename, '.mjs') + ".json";
       const { default: module } = await import(pathToFileURL(inFilename));
       const content = JSON.stringify(module);
