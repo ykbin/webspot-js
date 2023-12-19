@@ -36,7 +36,7 @@ async function buildConst({script, sourceDir, binaryDir}) {
 }
 
 async function buildJson({script, binaryDir, writeAsset}) {
-  if (script.json) {
+  if (script && script.json) {
     const arr = (typeof script.json === "string") ? [ script.json ] : script.json; 
     for (let i = 0; i < arr.length; i++) {
       const inFilename = path.resolve(binaryDir, arr[i]);
