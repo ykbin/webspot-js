@@ -172,7 +172,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
     }
 
     if (script) {
-      scriptModule.process({
+      scriptModule.processScript({
         from: script.entry,
         to: jsFilename,
         isDebug,
