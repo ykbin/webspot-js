@@ -53,22 +53,28 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset }) 
   const entry = from;
   const filename = to;
 
+  const defaultParams = {
+    resolve: {
+      modules: [ process.cwd() ],
+    },
+  }
+
   const debugParams = {
-    modules: [ process.cwd() ],
+    ...defaultParams,
     mode: 'development',
     devtool: 'source-map',
     output: {
       sourceMapFilename: `${filename}.map`,
       path: distDir,
-    }
+    },
   };
 
   const releaseParams = {
-    modules: [ process.cwd() ],
+    ...defaultParams,
     mode: 'production',
     output: {
       path: distDir,
-    }
+    },
   };
 
   const params = isDebug ? debugParams : releaseParams;
