@@ -49,11 +49,12 @@ async function buildJson({script, binaryDir, writeAsset}) {
   }
 }
 
-async function process({ from, to, isDebug, workDir, distDir, addAsset }) {
+async function processScript({ from, to, isDebug, workDir, distDir, addAsset }) {
   const entry = from;
   const filename = to;
 
   const debugParams = {
+    modules: [ process.cwd() ],
     mode: 'development',
     devtool: 'source-map',
     output: {
@@ -63,6 +64,7 @@ async function process({ from, to, isDebug, workDir, distDir, addAsset }) {
   };
 
   const releaseParams = {
+    modules: [ process.cwd() ],
     mode: 'production',
     output: {
       path: distDir,
@@ -73,7 +75,7 @@ async function process({ from, to, isDebug, workDir, distDir, addAsset }) {
 
   params.entry = {
     index: {
-      import: path.resolve(workDir, entry),
+      import: path.join(workDir, entry),
       filename,
     },
   };
