@@ -60,7 +60,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
     const cssFilename = `${name}.bundle.css`;
     const cssOptionList = [];
 
-    const jsFilename = `${name}.bundle.css`;
+    const jsFilename = `${name}.bundle.js`;
 
     const dom = await JSDOM.fromFile(inFilename, {});
 
