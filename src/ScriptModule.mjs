@@ -6,7 +6,7 @@ import { copyFileIfDifferent, getFilenamesFromParams } from './Lib.mjs';
 
 async function configure({script, sourceDir, binaryDir}) {
   const list = [];
-  for (const name of (script ? ['entry', 'const', 'list', 'json'] : [])) {
+  for (const name of (script ? ['entry', 'list'] : [])) {
     list.push(...getFilenamesFromParams(script[name]));
   }
   for(const iter of list) {
