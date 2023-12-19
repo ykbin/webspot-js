@@ -44,7 +44,7 @@ async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
     }
 
     if (params.script || (dom.options && dom.options.script)) {
-      const globalScript = (dom.options && dom.options.script) ? dom.options.script : {};
+      const globalScript = (dom.options && dom.options.script) ? ((typeof dom.options.script === 'string') ? { entry: dom.options.script } : (dom.options.script || {})) : {};
       const localScript = (typeof params.script === 'string') ? { entry: params.script } : (params.script || {});
       params.script = Object.assign({}, globalScript, localScript);
     }
