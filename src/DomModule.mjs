@@ -3,6 +3,7 @@ import jsdom from "jsdom";
 
 import { copyFileIfDifferent } from './Lib.mjs';
 import styleModule from './StyleModule.mjs';
+import scriptModule from './ScriptModule.mjs';
 
 const { JSDOM } = jsdom;
 
@@ -41,17 +42,25 @@ async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
       const localStyle = (typeof params.style === 'string') ? { entry: params.style } : (params.style || {});
       params.style = Object.assign({}, globalStyle, localStyle);
     }
+
+    if (params.script || (dom.options && dom.options.script)) {
+      const globalScript = (dom.options && dom.options.script) ? dom.options.script : {};
+      const localScript = (typeof params.script === 'string') ? { entry: params.script } : (params.script || {});
+      params.script = Object.assign({}, globalScript, localScript);
+    }
   }
 }
 
 async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, addAsset, setApplication}) {
   if (!dom) return;
   for (const [ name, params ] of Object.entries(dom.targets)) {
-    const { entry, alias, title, description, hasMeta, output, style } = getOptions(params);
+    const { entry, alias, title, description, hasMeta, output, style, script } = getOptions(params);
     const inFilename = path.resolve(sourceDir, entry);
 
     const cssFilename = `${name}.bundle.css`;
     const cssOptionList = [];
+
+    const jsFilename = `${name}.bundle.css`;
 
     const dom = await JSDOM.fromFile(inFilename, {});
 
@@ -96,8 +105,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         fragment.appendChild(linkElm);
       }
 
-      if (style)
-      {
+      if (style) {
         cssOptionList.push({
           from: style.entry,
           to: cssFilename,
@@ -112,6 +120,13 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         linkElm.setAttribute("type", "text/css");
         linkElm.setAttribute("href", path.posix.join(baseUrl, cssFilename));
         fragment.appendChild(linkElm);
+      }
+
+      if (script) {
+        const scriptElm = document.createElement('script');
+        scriptElm.setAttribute("defer", "defer");
+        scriptElm.setAttribute("src", path.posix.join(baseUrl, jsFilename));
+        fragment.appendChild(scriptElm);
       }
   
       document.head.insertBefore(fragment, document.head.firstChild);
@@ -154,6 +169,17 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
     if (cssResult) {
       writeAsset(cssFilename, cssResult.join(""), {type: "text/css"});
       console.log(`[style.bundle] Generate ${cssFilename}`);
+    }
+
+    if (script) {
+      scriptModule.process({
+        from: script.entry,
+        to: jsFilename,
+        isDebug,
+        workDir: sourceDir,
+        distDir,
+        addAsset
+      });
     }
 
     let options = {
