@@ -41,12 +41,12 @@ async function process({ from, to, prop, isDebug, workDir, writeAsset, isInlineS
   const result = await postcss(stylePlugins).process(content, { from, to });
 
   if (writeAsset) {
-    writeAsset(to, result.css, {type: "text/css"});
+    await writeAsset(to, result.css, {type: "text/css"});
     console.log(`[style.bundle] Generate from ${from} to ${to}`);
   }
 
   if (result.map && writeAsset) {
-    writeAsset(`${to}.map`, result.map, {type: "text/plain"});
+    await writeAsset(`${to}.map`, result.map, {type: "text/plain"});
     console.log(`[style.bundle] Generate ${to}.map`);
   }
 
@@ -92,10 +92,10 @@ async function generate({style, buildType, binaryDir, writeAsset}) {
       const content = await fs.promises.readFile(inFilepath, "utf-8");
       const outFilename = `${key}.bundle.css`;
       const result = await postcss(stylePlugins).process(content, { from: entry, to: outFilename });
-      writeAsset(outFilename, result.css, {type: "text/css"});
+      await writeAsset(outFilename, result.css, {type: "text/css"});
       console.log(`[style.bundle] Generate ${outFilename}`);
       if (result.map) {
-        writeAsset(`${outFilename}.map`, result.map, {type: "text/plain"});
+        await writeAsset(`${outFilename}.map`, result.map, {type: "text/plain"});
         console.log(`[style.bundle] Generate ${outFilename}.map`);
       }
     }

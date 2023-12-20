@@ -167,7 +167,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
     }
 
     if (cssResult) {
-      writeAsset(cssFilename, cssResult.join(""), {type: "text/css"});
+      await writeAsset(cssFilename, cssResult.join(""), {type: "text/css"});
       console.log(`[style.bundle] Generate ${cssFilename}`);
     }
 
