@@ -111,55 +111,18 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset }) 
   console.log(`[script.bundle] Generate ${filename}`);
 }
 
-async function buildBundle({script, isDebug, binaryDir, distDir, addAsset}) {
-  if (script && script.entry) {
-    for (const [ key, entry ] of Object.entries(script.entry)) {
-      const filename = `${key}.bundle.js`;
-
-      const debugParams = {
-        mode: 'development',
-        devtool: 'source-map',
-        output: {
-          filename,
-          sourceMapFilename: `${filename}.map`,
-          path: distDir,
-        }
-      };
-
-      const releaseParams = {
-        mode: 'production',
-        output: {
-          filename,
-          path: distDir,
-        }
-      };
-
-      const params = isDebug ? debugParams : releaseParams;
-
-      params.entry = {};
-      params.entry[key] = path.resolve(binaryDir, entry);
-
-      const compiler = webpack(params);
-      await new Promise((resolve, reject) => {
-        compiler.run((err, stats) => {
-          if (!err && stats.hasErrors()) {
-            switch (stats.compilation.errors.length) {
-            case 0: err = stats; break;
-            case 1: err = stats.compilation.errors[0]; break;
-            default: err = stats.compilation.errors; break;
-            }
-          }
-          err ? reject(err) : resolve(stats);
-        });
+async function buildBundle({ script, isDebug, sourceDir, distDir, addAsset }) {
+  if (script) {
+    for (const [ entry, from ] of Object.entries(script.entry)) {
+      const to = `${entry}.bundle.js`;
+      await processScript({
+        from,
+        to,
+        isDebug,
+        workDir: sourceDir,
+        distDir,
+        addAsset
       });
-
-      addAsset(filename);
-      if (params.output.sourceMapFilename)
-        addAsset(params.output.sourceMapFilename);
-      if (!isDebug)
-        addAsset(`${filename}.LICENSE.txt`);
-      
-      console.log(`[script.bundle] Generate ${filename}`);
     }
   }
 }
