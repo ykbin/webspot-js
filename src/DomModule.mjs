@@ -16,7 +16,7 @@ function getOptions(params) {
 
 async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
   if (!dom) return;
-  for (const [ name, params ] of Object.entries(dom.targets)) {
+  for (const [ name, params ] of Object.entries(dom.targets || {})) {
     params.output = params.output || {};
     params.output.filename = params.output.filename || `${name}.html`;
     params.favicon = await (async () => {
@@ -53,7 +53,7 @@ async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
 
 async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, addAsset, setApplication}) {
   if (!dom) return;
-  for (const [ name, params ] of Object.entries(dom.targets)) {
+  for (const [ name, params ] of Object.entries(dom.targets || {})) {
     const { entry, alias, title, description, hasMeta, output, style, script } = getOptions(params);
     const inFilename = path.resolve(sourceDir, entry);
 

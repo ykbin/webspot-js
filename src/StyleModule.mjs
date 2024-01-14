@@ -87,7 +87,7 @@ async function generate({style, buildType, binaryDir, writeAsset}) {
     if (buildType !== "Debug")
       stylePlugins.push(postcssMinify);
   
-    for (const [ key, entry ] of Object.entries(style.entry)) {
+    for (const [ key, entry ] of Object.entries(style.entry || {})) {
       const inFilepath = path.resolve(binaryDir, entry);
       const content = await fs.promises.readFile(inFilepath, "utf-8");
       const outFilename = `${key}.bundle.css`;

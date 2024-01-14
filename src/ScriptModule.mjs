@@ -113,7 +113,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset }) 
 
 async function buildBundle({ script, isDebug, sourceDir, distDir, addAsset }) {
   if (script) {
-    for (const [ entry, from ] of Object.entries(script.entry)) {
+    for (const [ entry, from ] of Object.entries(script.entry || {})) {
       const to = `${entry}.bundle.js`;
       await processScript({
         from,
