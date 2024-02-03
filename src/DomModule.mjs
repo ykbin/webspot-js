@@ -135,14 +135,17 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
     // controls
     {
       const cssMap = {};
+      const templateElm = document.createElement('template');
       const elements = Array.from(document.getElementsByTagName("webctl"));
       for (const iter of elements) {
         const pkg = iter.getAttribute("pkg");
-        const module = await import(`${pkg}/provider`);
+        const module = await import(pkg);
         const name = iter.getAttribute("ctl");
         const ctl = module[name];
-        const control = ctl.create(document, iter.id);
-        iter.replaceWith(control.element);
+        templateElm.innerHTML = ctl.template.rootHTML;
+        const controlElm = templateElm.content.firstElementChild;
+        iter.id && (controlElm.id = iter.id);
+        iter.replaceWith(controlElm);
 
         if (!(pkg in cssMap))
           cssMap[pkg] = {};
