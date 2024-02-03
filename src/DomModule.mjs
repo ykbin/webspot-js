@@ -147,6 +147,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         iter.id && (controlElm.id = iter.id);
         iter.replaceWith(controlElm);
 
+        console.log(`>>> ${ctl.template.metaUrl}`)
         cssMap[pkg] = cssMap[pkg] || {};
         if (!cssMap[pkg][name]) {
           cssOptionList.push({
