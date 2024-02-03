@@ -1,4 +1,5 @@
 import path from "node:path";
+import { fileURLToPath } from 'node:url';
 import jsdom from "jsdom";
 
 import { copyFileIfDifferent } from './Lib.mjs';
@@ -147,15 +148,17 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         iter.id && (controlElm.id = iter.id);
         iter.replaceWith(controlElm);
 
-        console.log(`>>> ${ctl.template.metaUrl}`)
+        const filepath = fileURLToPath(ctl.template.metaUrl);
+        const workDir = path.dirname(filepath);
+
         cssMap[pkg] = cssMap[pkg] || {};
         if (!cssMap[pkg][name]) {
           cssOptionList.push({
-            from: path.join(ctl.template.basePath, 'index.css'),
+            from: 'index.css',
             to: cssFilename,
             prop: null, // properties.css
             isDebug,
-            workDir: ctl.template.basePath,
+            workDir,
             isInlineSvg: true,
           });
           cssMap[pkg][name] = true;
