@@ -147,18 +147,17 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         iter.id && (controlElm.id = iter.id);
         iter.replaceWith(controlElm);
 
-        if (!(pkg in cssMap))
-          cssMap[pkg] = {};
-        
-        if (!(name in cssMap[pkg])) {
+        cssMap[pkg] = cssMap[pkg] || {};
+        if (!cssMap[pkg][name]) {
           cssOptionList.push({
-            from: ctl.styleEntry,
+            from: path.join(ctl.template.basePath, 'index.css'),
             to: cssFilename,
-            prop: ctl.prop,
+            prop: null, // properties.css
             isDebug,
-            workDir: ctl.path,
+            workDir: ctl.template.basePath,
             isInlineSvg: true,
           });
+          cssMap[pkg][name] = true;
         }
       }
     }
