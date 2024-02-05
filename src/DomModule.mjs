@@ -1,6 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from 'node:url';
 import jsdom from "jsdom";
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { copyFileIfDifferent } from './Lib.mjs';
 import styleModule from './StyleModule.mjs';
@@ -140,16 +141,19 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
       const elements = Array.from(document.getElementsByTagName("webctl"));
       for (const iter of elements) {
         const pkg = iter.getAttribute("pkg");
-        const module = await import(pkg);
         const name = iter.getAttribute("ctl");
-        const ctl = module[name];
+
+        const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
+        const pkgMainDir = path.dirname(pkgMainUrl);
+        const ctlUrl = path.join(pkgMainDir, name, 'index.mjs');
+        const workDir = path.dirname(fileURLToPath(ctlUrl));
+        const module = await import(ctlUrl);
+        const ctl = module.default;
+
         templateElm.innerHTML = ctl.template.rootHTML;
         const controlElm = templateElm.content.firstElementChild;
         iter.id && (controlElm.id = iter.id);
         iter.replaceWith(controlElm);
-
-        const filepath = fileURLToPath(ctl.template.metaUrl);
-        const workDir = path.dirname(filepath);
 
         cssMap[pkg] = cssMap[pkg] || {};
         if (!cssMap[pkg][name]) {
@@ -212,8 +216,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         description,
       };
 
-      if (params.application.icon) {
-        const pathStr = params.application.icon;
+      const addAppImage = async (pathStr) => {
         const filename = path.basename(pathStr);
 
         const inFilename = path.resolve(sourceDir, pathStr);
@@ -222,22 +225,26 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         addAsset(filename);
         if (await copyFileIfDifferent(inFilename, outFilename))
           console.log(`[dom.configure] Copy ${filename}`);
-        
-          application.icon = filename;
+
+        return filename;
+      }
+
+      if (params.application.icon) {
+        application.icon = await addAppImage(params.application.icon);
       }
 
       if (params.application.logo) {
-        const pathStr = params.application.logo;
-        const filename = path.basename(pathStr);
-
-        const inFilename = path.resolve(sourceDir, pathStr);
-        const outFilename = path.resolve(distDir, filename);
-  
-        addAsset(filename);
-        if (await copyFileIfDifferent(inFilename, outFilename))
-          console.log(`[dom.configure] Copy ${filename}`);
-        
-          application.logo = filename;
+        let logo = [];
+        if (typeof params.application.logo === 'object') {
+          logo = params.application.logo;
+        }
+        else if (typeof params.application.logo === 'string') {
+          logo = [ params.application.logo, params.application.logo ];
+        }
+        application.logo = [];
+        for (const iter of logo) {
+          application.logo.push(await addAppImage(iter));
+        }
       }
 
       setApplication(application);

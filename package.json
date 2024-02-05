@@ -28,6 +28,7 @@
     "@csstools/postcss-minify": "^1.0.2",
     "@csstools/postcss-global-data": "^2.1.0",
     "postcss-custom-properties": "^13.3.2",
+    "import-meta-resolve": "^4.0.0",
     
     "webcomctl-js": "github:yakubins/webcomctl-js"
   },
