@@ -16,28 +16,39 @@ function getOptions(params) {
   return Object.assign(defaultOptions, params);
 }
 
+async function makeResObject({resource, baseUrl, sourceDir, distDir, addAsset}) {
+  if (typeof resource !== "string")
+    return null;
+
+  const filename = path.basename(resource);
+  const href = path.posix.join(baseUrl, filename);
+
+  const input = path.resolve(sourceDir, resource);
+  const output = path.resolve(distDir, filename);
+
+  addAsset(filename);
+  if (await copyFileIfDifferent(input, output))
+    console.log(`[dom.configure] Copy ${resource}`);
+  
+  return { input, output, href };
+}
+
 async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
   if (!dom) return;
   for (const [ name, params ] of Object.entries(dom.targets || {})) {
     params.output = params.output || {};
     params.output.filename = params.output.filename || `${name}.html`;
-    params.favicon = await (async () => {
-      const icon = params.favicon || (dom.options && dom.options.favicon);
-      if (typeof icon !== "string")
-        return null;
-
-      const filename = path.basename(icon);
-      const href = path.posix.join(baseUrl, filename);
-
-      const inFilename = path.resolve(sourceDir, icon);
-      const outFilename = path.resolve(distDir, filename);
-
-      addAsset(filename);
-      if (await copyFileIfDifferent(inFilename, outFilename))
-        console.log(`[dom.configure] Copy ${icon}`);
-      
-      return { href }
-    })();
+    params.favicon = await makeResObject({resource: params.favicon || (dom.options && dom.options.favicon), baseUrl, sourceDir, distDir, addAsset});
+    params.shortcut = {
+      light: await makeResObject({
+        resource: (params.shortcut && params.shortcut.light) || (dom.options && dom.options.shortcut && dom.options.shortcut.light),
+        baseUrl, sourceDir, distDir, addAsset
+      }),
+      dark: await makeResObject({
+        resource: (params.shortcut && params.shortcut.dark) || (dom.options && dom.options.shortcut && dom.options.shortcut.dark),
+        baseUrl, sourceDir, distDir, addAsset
+      }),
+    };
 
     if (params.style || (dom.options && dom.options.style)) {
       const globalStyle = (dom.options && dom.options.style) ? dom.options.style : {};
@@ -107,6 +118,20 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         fragment.appendChild(linkElm);
       }
 
+      const addShortcutLink = (obj, scheme) => {
+        if (obj) {
+          const linkElm = document.createElement('link');
+          linkElm.setAttribute("rel", "shortcut icon");
+          linkElm.setAttribute("href", obj.href);
+          linkElm.setAttribute("type", "image/x-icon");
+          linkElm.setAttribute("media", `(prefers-color-scheme: ${scheme})`);
+          fragment.appendChild(linkElm);
+        }
+      };
+
+      addShortcutLink(params.shortcut.light, 'light');
+      addShortcutLink(params.shortcut.dark, 'dark');
+
       if (style) {
         cssOptionList.push({
           from: style.entry,
@@ -130,7 +155,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         scriptElm.setAttribute("src", path.posix.join(baseUrl, jsFilename));
         fragment.appendChild(scriptElm);
       }
-  
+
       document.head.insertBefore(fragment, document.head.firstChild);
     }
 
