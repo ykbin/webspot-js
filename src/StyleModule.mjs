@@ -5,8 +5,6 @@ import postcssUrl from 'postcss-url';
 import postcssImport from 'postcss-import';
 import autoPrefixer from 'autoprefixer';
 import postcssMinify from '@csstools/postcss-minify';
-import postcssGlobalData from '@csstools/postcss-global-data';
-import postcssCustomProperties from 'postcss-custom-properties';
 // import postcssNested from 'postcss-nested';
 import { copyFileIfDifferent, getFilenamesFromParams } from './Lib.mjs';
 
@@ -17,12 +15,6 @@ async function process({ from, to, prop, isDebug, workDir, writeAsset, isInlineS
       path: [ workDir ],
     }),
     autoPrefixer,
-    postcssGlobalData({
-      files: propFiles,
-    }),
-    postcssCustomProperties({
-      preserve: false
-    }),
   ];
 
   if (isInlineSvg) {
