@@ -80,26 +80,26 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
     const document = dom.window.document;
 
     // head
+    const headFrg = document.createDocumentFragment();
     {
-      const fragment = document.createDocumentFragment();
 
       if (isDebug) {
         const comment = document.createComment(`Genrated from '${entry}'`);
-        fragment.appendChild(comment);
+        headFrg.appendChild(comment);
       }
 
       if (hasMeta) {
         const metaElm = document.createElement('meta');
         metaElm.setAttribute("http-equiv", "Content-Type");
         metaElm.setAttribute("content", "text/html; charset=utf-8");
-        fragment.appendChild(metaElm);  
+        headFrg.appendChild(metaElm);  
       }
 
       if (description) {
         const metaElm = document.createElement('meta');
         metaElm.setAttribute("name", "description");
         metaElm.setAttribute("content", description);
-        fragment.appendChild(metaElm);  
+        headFrg.appendChild(metaElm);  
       }
 
       if (title && !document.head.querySelector("title")) {
@@ -107,7 +107,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         titleElm.setAttribute("class", "notranslate");
         titleElm.setAttribute("translate", "no");
         titleElm.textContent = title + (isDebug ? " (Debug)" : "");
-        fragment.appendChild(titleElm);
+        headFrg.appendChild(titleElm);
       }
 
       if (params.favicon) {
@@ -115,7 +115,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         linkElm.setAttribute("rel", "icon");
         linkElm.setAttribute("href", params.favicon.href);
         linkElm.setAttribute("sizes", "any");
-        fragment.appendChild(linkElm);
+        headFrg.appendChild(linkElm);
       }
 
       const addShortcutLink = (obj, scheme) => {
@@ -125,7 +125,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
           linkElm.setAttribute("href", obj.href);
           linkElm.setAttribute("type", "image/x-icon");
           linkElm.setAttribute("media", `(prefers-color-scheme: ${scheme})`);
-          fragment.appendChild(linkElm);
+          headFrg.appendChild(linkElm);
         }
       };
 
@@ -141,22 +141,14 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
           workDir: sourceDir,
           isInlineSvg: false,
         });
-
-        const linkElm = document.createElement('link');
-        linkElm.setAttribute("rel", "stylesheet");
-        linkElm.setAttribute("type", "text/css");
-        linkElm.setAttribute("href", path.posix.join(baseUrl, cssFilename));
-        fragment.appendChild(linkElm);
       }
 
       if (script) {
         const scriptElm = document.createElement('script');
         scriptElm.setAttribute("defer", "defer");
         scriptElm.setAttribute("src", path.posix.join(baseUrl, jsFilename));
-        fragment.appendChild(scriptElm);
+        headFrg.appendChild(scriptElm);
       }
-
-      document.head.insertBefore(fragment, document.head.firstChild);
     }
 
     // controls
@@ -219,7 +211,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
       cssResult.push(cssText);
     }
 
-    if (cssResult) {
+    if (cssResult.length) {
       await writeAsset(cssFilename, cssResult.join(""), {type: "text/css"});
       console.log(`[style.bundle] Generate ${cssFilename}`);
     }
@@ -234,6 +226,16 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         addAsset
       });
     }
+
+    if (cssResult.length) {
+      const linkElm = document.createElement('link');
+      linkElm.setAttribute("rel", "stylesheet");
+      linkElm.setAttribute("type", "text/css");
+      linkElm.setAttribute("href", path.posix.join(baseUrl, cssFilename));
+      headFrg.appendChild(linkElm);
+    }
+
+    document.head.insertBefore(headFrg, document.head.firstChild);
 
     let options = {
       type: "text/html",
