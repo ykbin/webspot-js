@@ -102,11 +102,12 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         headFrg.appendChild(metaElm);  
       }
 
-      if (title && !document.head.querySelector("title")) {
+      if (!document.head.querySelector("title")) {
+        const titleStr = (title || path.parse(entry).name) + (isDebug ? " (Debug)" : "");
         const titleElm = document.createElement('title');
         titleElm.setAttribute("class", "notranslate");
         titleElm.setAttribute("translate", "no");
-        titleElm.textContent = title + (isDebug ? " (Debug)" : "");
+        titleElm.textContent = titleStr;
         headFrg.appendChild(titleElm);
       }
 
