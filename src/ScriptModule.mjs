@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import webpack from 'webpack';
-import { pathToFileURL } from 'url';
 import { copyFileIfDifferent, getFilenamesFromParams } from './Lib.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
