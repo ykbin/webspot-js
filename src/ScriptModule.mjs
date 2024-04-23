@@ -62,6 +62,12 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset }) 
         path.join(process.cwd(), 'node_modules')
       ],
     },
+    resolveLoader: {
+      alias: {
+        'cmake-loader': path.resolve(__dirname, 'loader/CMakeLoader.mjs'),
+        'module-loader': path.resolve(__dirname, 'loader/ModuleLoader.mjs'),
+      },
+    },
   }
 
   const debugParams = {
@@ -88,11 +94,6 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset }) 
     index: {
       import: path.join(workDir, entry),
       filename,
-    },
-    resolveLoader: {
-      alias: {
-        'script-loader': path.resolve(__dirname, 'loader/ScriptLoader.mjs'),
-      },
     },
   };
 
