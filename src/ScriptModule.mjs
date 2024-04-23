@@ -4,6 +4,9 @@ import webpack from 'webpack';
 import { pathToFileURL } from 'url';
 import { copyFileIfDifferent, getFilenamesFromParams } from './Lib.mjs';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 async function configure({script, sourceDir, binaryDir}) {
   const list = [];
   for (const name of (script ? ['entry', 'list'] : [])) {
@@ -85,6 +88,11 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset }) 
     index: {
       import: path.join(workDir, entry),
       filename,
+    },
+    resolveLoader: {
+      alias: {
+        'script-loader': path.resolve(__dirname, 'loader/ScriptLoader.mjs'),
+      },
     },
   };
 
