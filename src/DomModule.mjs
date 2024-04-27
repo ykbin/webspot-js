@@ -1,5 +1,5 @@
 import path from "node:path";
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import jsdom from "jsdom";
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
@@ -64,8 +64,12 @@ async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
   }
 }
 
-async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, addAsset, setApplication}) {
+async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, writeAsset, addAsset, setApplication}) {
   if (!dom) return;
+
+  const ctlModules = {};
+  const ctlsDir = path.join(binaryDir, 'webspot', 'controls');
+
   for (const [ name, params ] of Object.entries(dom.targets || {})) {
     const { entry, alias, title, description, hasMeta, output, style, script } = getOptions(params);
     const inFilename = path.resolve(sourceDir, entry);
@@ -170,8 +174,23 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
           const pkgMainDir = path.dirname(pkgMainUrl);
           const ctlUrl = path.join(pkgMainDir, name, 'index.mjs');
           const workDir = path.dirname(fileURLToPath(ctlUrl));
-          const module = await import(ctlUrl);
-          const ctl = module.default;
+          
+          let ctlBundleModule = ctlModules[name];
+          if (!ctlBundleModule) {
+            await scriptModule.processScript({
+              from: 'index.mjs',
+              to: `${name}.bundle.js`,
+              isDebug,
+              workDir,
+              distDir: ctlsDir,
+              addAsset: null,
+              type: 'module',
+            });
+            ctlBundleModule = await import(pathToFileURL(path.join(ctlsDir, `${name}.bundle.js`)));
+            ctlModules[name] = ctlBundleModule;
+          }
+
+          const ctl = ctlBundleModule.default;
   
           templateElm.innerHTML = ctl.template.rootHTML;
           const controlElm = templateElm.content.firstElementChild;
@@ -187,7 +206,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
           }
   
           element.replaceWith(controlElm);
-  
+
           cssMap[pkg] = cssMap[pkg] || {};
           if (!cssMap[pkg][name]) {
             cssOptionList.push({
@@ -197,6 +216,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
               isDebug,
               workDir,
               isInlineSvg: true,
+              content: ctlBundleModule.template && ctlBundleModule.template.CSS,
             });
             cssMap[pkg][name] = true;
           }
@@ -224,7 +244,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, distDir, writeAsset, 
         isDebug,
         workDir: sourceDir,
         distDir,
-        addAsset
+        addAsset,
       });
     }
 

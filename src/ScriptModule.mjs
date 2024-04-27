@@ -52,7 +52,7 @@ async function buildJson({script, sourceDir, writeAsset}) {
   }
 }
 
-async function processScript({ from, to, isDebug, workDir, distDir, addAsset }) {
+async function processScript({ from, to, isDebug, workDir, distDir, addAsset, type }) {
   const entry = from;
   const filename = to;
 
@@ -68,7 +68,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset }) 
         'module-loader': path.resolve(__dirname, 'loader/ModuleLoader.mjs'),
       },
     },
-  }
+  };
 
   const debugParams = {
     ...defaultParams,
@@ -89,6 +89,12 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset }) 
   };
 
   const params = isDebug ? debugParams : releaseParams;
+  if (type) {
+    params.output.library = {type};
+    if (type === 'module') {
+      params.experiments = {outputModule: true};
+    }
+  }
 
   params.entry = {
     index: {
@@ -111,12 +117,14 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset }) 
     });
   });
 
-  addAsset(filename);
-  if (params.output.sourceMapFilename)
-    addAsset(params.output.sourceMapFilename);
-  if (!isDebug)
-    addAsset(`${filename}.LICENSE.txt`);
-  
+  if (addAsset) {
+    addAsset(filename);
+    if (params.output.sourceMapFilename)
+      addAsset(params.output.sourceMapFilename);
+    if (!isDebug)
+      addAsset(`${filename}.LICENSE.txt`);
+  }
+
   console.log(`[script.bundle] Generate ${filename}`);
 }
 

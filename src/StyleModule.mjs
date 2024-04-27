@@ -8,7 +8,7 @@ import postcssMinify from '@csstools/postcss-minify';
 // import postcssNested from 'postcss-nested';
 import { copyFileIfDifferent, getFilenamesFromParams } from './Lib.mjs';
 
-async function process({ from, to, prop, isDebug, workDir, writeAsset, isInlineSvg }) {
+async function process({ from, to, prop, isDebug, workDir, writeAsset, isInlineSvg, content }) {
   const propFiles = prop ? [ path.join(workDir, prop) ] : [];
   const stylePlugins = [
     postcssImport({
@@ -28,8 +28,11 @@ async function process({ from, to, prop, isDebug, workDir, writeAsset, isInlineS
    if (!isDebug)
     stylePlugins.push(postcssMinify);
 
-  const inFilepath = path.resolve(workDir, from);
-  const content = await fs.promises.readFile(inFilepath, "utf-8");
+  if (!content) {
+    const inFilepath = path.resolve(workDir, from);
+    content = await fs.promises.readFile(inFilepath, "utf-8");
+  }
+
   const result = await postcss(stylePlugins).process(content, { from, to });
 
   if (writeAsset) {
