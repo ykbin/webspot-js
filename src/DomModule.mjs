@@ -190,13 +190,18 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
             ctlModules[name] = ctlBundleModule;
           }
 
-          const ctl = ctlBundleModule.default;
+          const HTML = ctlBundleModule.template.HTML;
+          if (typeof HTML !== 'string') {
+            console.log('module:', ctlBundleModule);
+            console.log('module.default:', ctlBundleModule.default);
+            throw `Not exists HTML for ${name}`;
+          }
   
-          templateElm.innerHTML = ctl.template.rootHTML;
+          templateElm.innerHTML = HTML;
           const controlElm = templateElm.content.firstElementChild;
           element.id && (controlElm.id = element.id);
   
-          const portClass = ctl.template.portClass;
+          const portClass = ctlBundleModule.template.CLASS.PORT;
           if (portClass) {
             const portElm = controlElm.classList.contains(portClass) ? controlElm : controlElm.querySelector(`.${portClass}`);
             while (element.firstChild) {
@@ -216,7 +221,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
               isDebug,
               workDir,
               isInlineSvg: true,
-              content: ctlBundleModule.template && ctlBundleModule.template.CSS,
+              content: ctlBundleModule.template.CSS,
             });
             cssMap[pkg][name] = true;
           }
