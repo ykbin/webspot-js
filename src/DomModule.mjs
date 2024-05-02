@@ -169,7 +169,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
         if (element.tagName.toLowerCase() === 'webctl') {
           const pkg = element.getAttribute("pkg");
           const name = element.getAttribute("ctl");
-          const htmlDisable = element.getAttribute("html") === 'disable';
+          const htmlEnable = element.getAttribute("html") !== 'disable';
 
           const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
           const pkgMainDir = path.dirname(pkgMainUrl);
@@ -191,27 +191,32 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
             ctlModules[name] = ctlBundleModule;
           }
 
-          const HTML = ctlBundleModule.template.HTML;
-          if (typeof HTML !== 'string') {
-            console.log('module:', ctlBundleModule);
-            console.log('module.default:', ctlBundleModule.default);
-            throw `Not exists HTML for ${name}`;
-          }
-  
-          templateElm.innerHTML = htmlDisable ? '' : HTML;
-          const controlElm = templateElm.content.firstElementChild;
-          element.id && (controlElm.id = element.id);
-  
-          const portClass = ctlBundleModule.template.CLASS.PORT;
-          if (portClass) {
-            const portElm = controlElm.classList.contains(portClass) ? controlElm : controlElm.querySelector(`.${portClass}`);
-            while (element.firstChild) {
-              const child = element.removeChild(element.firstChild);
-              portElm.appendChild(child);
+          if (htmlEnable) {
+            const HTML = ctlBundleModule.template.HTML;
+            if (typeof HTML !== 'string') {
+              console.log('module:', ctlBundleModule);
+              console.log('module.default:', ctlBundleModule.default);
+              throw `Not exists HTML for ${name}`;
             }
+    
+            templateElm.innerHTML = HTML;
+            const controlElm = templateElm.content.firstElementChild;
+            element.id && (controlElm.id = element.id);
+    
+            const portClass = ctlBundleModule.template.CLASS.PORT;
+            if (portClass) {
+              const portElm = controlElm.classList.contains(portClass) ? controlElm : controlElm.querySelector(`.${portClass}`);
+              while (element.firstChild) {
+                const child = element.removeChild(element.firstChild);
+                portElm.appendChild(child);
+              }
+            }
+
+            element.replaceWith(controlElm);
           }
-  
-          element.replaceWith(controlElm);
+          else {
+            element.remove();
+          }
 
           cssMap[pkg] = cssMap[pkg] || {};
           if (!cssMap[pkg][name]) {
