@@ -169,6 +169,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
         if (element.tagName.toLowerCase() === 'webctl') {
           const pkg = element.getAttribute("pkg");
           const name = element.getAttribute("ctl");
+          const htmlDisable = element.getAttribute("html") === 'disable';
 
           const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
           const pkgMainDir = path.dirname(pkgMainUrl);
@@ -197,7 +198,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
             throw `Not exists HTML for ${name}`;
           }
   
-          templateElm.innerHTML = HTML;
+          templateElm.innerHTML = htmlDisable ? '' : HTML;
           const controlElm = templateElm.content.firstElementChild;
           element.id && (controlElm.id = element.id);
   
