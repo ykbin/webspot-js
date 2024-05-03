@@ -206,6 +206,9 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
             const portClass = ctlBundleModule.template.CLASS.PORT;
             if (portClass) {
               const portElm = controlElm.classList.contains(portClass) ? controlElm : controlElm.querySelector(`.${portClass}`);
+              if (!portElm) {
+                throw `Cannot find port element with ${portClass} classname of ${name}`
+              }
               while (element.firstChild) {
                 const child = element.removeChild(element.firstChild);
                 portElm.appendChild(child);
