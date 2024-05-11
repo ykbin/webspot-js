@@ -64,6 +64,23 @@ async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
   }
 }
 
+function getDarkLightFileList(params)
+{
+  let files = [];
+  if (typeof params === 'object') {
+    if (params.length == 1) {
+      return [ files[0], files[0] ];
+    }
+    if (params.length >= 2) {
+      return [ files[0], files[1] ];
+    }
+  }
+  else if (typeof params === 'string') {
+    return [ params, params ];
+  }
+  return [];
+}
+
 async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, writeAsset, addAsset, setApplication}) {
   if (!dom) return;
 
@@ -310,19 +327,15 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
       }
 
       if (params.application.icon) {
-        application.icon = await addAppImage(params.application.icon);
+        application.icon = [];
+        for (const iter of getDarkLightFileList(params.application.icon)) {
+          application.icon.push(await addAppImage(iter));
+        }
       }
 
       if (params.application.logo) {
-        let logo = [];
-        if (typeof params.application.logo === 'object') {
-          logo = params.application.logo;
-        }
-        else if (typeof params.application.logo === 'string') {
-          logo = [ params.application.logo, params.application.logo ];
-        }
         application.logo = [];
-        for (const iter of logo) {
+        for (const iter of getDarkLightFileList(params.application.logo)) {
           application.logo.push(await addAppImage(iter));
         }
       }
