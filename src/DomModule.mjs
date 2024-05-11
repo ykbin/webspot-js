@@ -66,13 +66,12 @@ async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
 
 function getDarkLightFileList(params)
 {
-  let files = [];
   if (typeof params === 'object') {
     if (params.length == 1) {
-      return [ files[0], files[0] ];
+      return [ params[0], params[0] ];
     }
     if (params.length >= 2) {
-      return [ files[0], files[1] ];
+      return [ params[0], params[1] ];
     }
   }
   else if (typeof params === 'string') {
