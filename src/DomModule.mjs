@@ -98,7 +98,10 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
 
     const jsFilename = `${name}.bundle.js`;
 
-    const fileContent = fs.readFileSync(inFilename, 'utf8').toString();
+    let fileBytes = fs.readFileSync(inFilename, 'utf8').toString();
+    fileBytes = fileBytes.replace(/^\uFEFF/, '');
+    const fileContent = fileBytes.toString();
+
     let dom = new JSDOM(fileContent);
 
     let pkgDefault = null;
