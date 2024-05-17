@@ -1,4 +1,5 @@
 import path from "node:path";
+import fs from "node:fs";
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import jsdom from "jsdom";
 import { resolve as importMetaResolve } from 'import-meta-resolve';
@@ -83,7 +84,9 @@ function getDarkLightFileList(params)
 async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, writeAsset, addAsset, setApplication}) {
   if (!dom) return;
 
+  const docModules = {};
   const ctlModules = {};
+  const docsDir = path.join(binaryDir, 'webspot', 'documents');
   const ctlsDir = path.join(binaryDir, 'webspot', 'controls');
 
   for (const [ name, params ] of Object.entries(dom.targets || {})) {
@@ -95,10 +98,76 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
 
     const jsFilename = `${name}.bundle.js`;
 
-    const dom = await JSDOM.fromFile(inFilename, {});
+    const fileContent = fs.readFileSync(inFilename).toString();
+    let dom = new JSDOM(fileContent);
+
+    let pkgDefault = null;
+
+    {
+      const templateElm = dom.window.document.createElement('template');
+      templateElm.innerHTML = fileContent;
+      if (templateElm.content.childElementCount == 1) {
+        const rootElm = templateElm.content.firstElementChild;
+        if (rootElm.tagName.toLowerCase() === 'webdocument') {
+          const pkg = rootElm.getAttribute("pkg");
+          const name = rootElm.getAttribute("name");
+          const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
+          const pkgMainDir = path.dirname(pkgMainUrl);
+          const docUrl = path.join(pkgMainDir, 'document', name, 'index.mjs');
+          const workDir = path.dirname(fileURLToPath(docUrl));
+
+          docModules[pkg] = docModules[pkg] || {};
+          let docBundleModule = docModules[pkg][name];
+          if (!docBundleModule) {
+            await scriptModule.processScript({
+              from: 'index.mjs',
+              to: `${name}.bundle.js`,
+              isDebug,
+              workDir,
+              distDir: docsDir,
+              addAsset: null,
+              type: 'module',
+            });
+            docBundleModule = await import(pathToFileURL(path.join(docsDir, `${name}.bundle.js`)));
+            docModules[pkg][name] = docBundleModule;
+          }
+
+          const HTML = docBundleModule.template.HTML;
+          if (typeof HTML !== 'string') {
+            console.log('doc module:', docBundleModule);
+            console.log('doc module.default:', docBundleModule.default);
+            throw `Not exists HTML for ${name}`;
+          }
+
+          const innerHTML = rootElm.innerHTML;
+          dom = new JSDOM(HTML);
+
+          const portClass = docBundleModule.template.CLASS.PORT;
+          if (portClass) {
+            const documentElement = dom.window.document.documentElement;
+            const portElm = documentElement.classList.contains(portClass) ? documentElement : documentElement.querySelector(`.${portClass}`);
+            if (!portElm) {
+              throw `Cannot find port documentElement with ${portClass} classname of ${name}`
+            }
+            portElm.innerHTML = innerHTML;
+          }
+
+          cssOptionList.push({
+            from: 'index.css',
+            to: cssFilename,
+            prop: null,
+            isDebug,
+            workDir,
+            isInlineSvg: true,
+            content: docBundleModule.template.CSS,
+          });
+
+          pkgDefault = pkg;
+        }
+      }
+    }
 
     const document = dom.window.document;
-
     // head
     const headFrg = document.createDocumentFragment();
     {
@@ -183,7 +252,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
         }
 
         if (element.tagName.toLowerCase() === 'webctl') {
-          const pkg = element.getAttribute("pkg");
+          const pkg = element.getAttribute("pkg") || pkgDefault;
           const name = element.getAttribute("ctl");
           const htmlEnable = element.getAttribute("html") !== 'disable';
 
