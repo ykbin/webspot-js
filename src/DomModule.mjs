@@ -121,6 +121,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
           docModules[pkg] = docModules[pkg] || {};
           let docBundleModule = docModules[pkg][name];
           if (!docBundleModule) {
+            console.log(`Started processing document ${pkg}/${name}`);
             await scriptModule.processScript({
               from: 'index.mjs',
               to: `${name}.bundle.js`,
@@ -265,7 +266,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
           
           let ctlBundleModule = ctlModules[name];
           if (!ctlBundleModule) {
-            console.log(`Start process control ${pkg}/${name}`);
+            console.log(`Started processing control ${pkg}/${name}`);
             await scriptModule.processScript({
               from: 'index.mjs',
               to: `${name}.bundle.js`,
