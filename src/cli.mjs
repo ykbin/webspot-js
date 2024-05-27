@@ -55,6 +55,7 @@ const argm = makeAgrsMap(args, {
 });
 
 (async () => {
+  process.env.WEBMAKE_BUILD_TYPE = argm.buildType;
   const configUrl = pathToFileURL(path.resolve(argm.sourceDir, "project.config.mjs"));
   const { default: projectConfig } = await import(configUrl);
   const config = Object.assign(projectConfig, argm);
