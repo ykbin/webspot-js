@@ -265,6 +265,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
           
           let ctlBundleModule = ctlModules[name];
           if (!ctlBundleModule) {
+            console.log(`Start process control ${pkg}/${name}`);
             await scriptModule.processScript({
               from: 'index.mjs',
               to: `${name}.bundle.js`,
