@@ -260,10 +260,13 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
           const htmlEnable = element.getAttribute("html") !== 'disable';
 
           const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
-          const pkgMainDir = path.dirname(pkgMainUrl);
-          const ctlUrl = path.join(pkgMainDir, name, 'index.mjs');
-          const workDir = path.dirname(fileURLToPath(ctlUrl));
-          
+          const pkgMainDir = fileURLToPath(path.dirname(pkgMainUrl));
+          let ctlFile = path.join(pkgMainDir, name, 'index.mjs');
+          if (!fs.existsSync(ctlFile)) {
+            ctlFile = path.join(pkgMainDir, 'control', name, 'index.mjs');
+          }
+          const workDir = path.dirname(ctlFile);
+
           let ctlBundleModule = ctlModules[name];
           if (!ctlBundleModule) {
             console.log(`Started processing control ${pkg}/${name}`);
