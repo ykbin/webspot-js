@@ -62,6 +62,12 @@ async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
       const localScript = (typeof params.script === 'string') ? { entry: params.script } : (params.script || {});
       params.script = Object.assign({}, globalScript, localScript);
     }
+
+    if (params.control || (dom.options && dom.options.control)) {
+      const globalScript = (dom.options && dom.options.control) ? ((typeof dom.options.control === 'string') ? { entry: dom.options.control } : (dom.options.control || {})) : {};
+      const localScript = (typeof params.control === 'string') ? { entry: params.control } : (params.control || {});
+      params.control = Object.assign({}, globalScript, localScript);
+    }
   }
 }
 
@@ -81,7 +87,9 @@ function getDarkLightFileList(params)
   return [];
 }
 
-async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, writeAsset, addAsset, setApplication}) {
+async function generate(context) {
+  const {dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, writeAsset, addAsset, setApplication} = context;
+
   if (!dom) return;
 
   const docModules = {};
@@ -90,7 +98,9 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
   const ctlsDir = path.join(binaryDir, 'webspot', 'controls');
 
   for (const [ name, params ] of Object.entries(dom.targets || {})) {
-    const { entry, alias, title, description, hasMeta, output, style, script } = getOptions(params);
+    const parameters = getOptions(params);
+    const staticControlFile = parameters.control && parameters.control.basic && path.resolve(sourceDir, parameters.control.basic) || null;
+    const { entry, alias, title, description, hasMeta, output, style, script } = parameters;
     const inFilename = path.resolve(sourceDir, entry);
 
     const cssFilename = `${name}.bundle.css`;
@@ -104,6 +114,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
     let dom = new JSDOM(fileContent);
 
     let pkgDefault = null;
+    const cssMap = {};
 
     {
       const templateElm = dom.window.document.createElement('template');
@@ -244,9 +255,8 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
       }
     }
 
-    // controls
+    // html controls
     {
-      const cssMap = {};
       const templateElm = document.createElement('template');
 
       const replaceWebctl = async (element) => {
@@ -332,6 +342,47 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
       await replaceWebctl(document.documentElement);
     }
 
+    if (staticControlFile) {
+      const module = await import(pathToFileURL(staticControlFile));
+      const pkg = module.PKG
+      for (const name in module.CTLS) {
+        const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
+        const pkgMainDir = fileURLToPath(path.dirname(pkgMainUrl));
+        let ctlFile = path.join(pkgMainDir, 'control', name, 'index.mjs');
+        const workDir = path.dirname(ctlFile);
+  
+        let ctlBundleModule = ctlModules[name];
+        if (!ctlBundleModule) {
+          console.log(`Started processing control ${pkg}/${name}`);
+          await scriptModule.processScript({
+            from: 'index.mjs',
+            to: `${name}.bundle.js`,
+            isDebug,
+            workDir,
+            distDir: ctlsDir,
+            addAsset: null,
+            type: 'module',
+          });
+          ctlBundleModule = await import(pathToFileURL(path.join(ctlsDir, `${name}.bundle.js`)));
+          ctlModules[name] = ctlBundleModule;
+        }
+  
+        cssMap[pkg] = cssMap[pkg] || {};
+        if (!cssMap[pkg][name]) {
+          cssOptionList.push({
+            from: 'index.css',
+            to: cssFilename,
+            prop: null,
+            isDebug,
+            workDir,
+            isInlineSvg: true,
+            content: ctlBundleModule.template.CSS,
+          });
+          cssMap[pkg][name] = true;
+        }
+      }
+    }
+
     const cssResult = [];
     for (const options of cssOptionList) {
       const cssText = await styleModule.process(options);
@@ -351,6 +402,7 @@ async function generate({dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, w
         workDir: sourceDir,
         distDir,
         addAsset,
+        staticControlFile,
       });
     }
 

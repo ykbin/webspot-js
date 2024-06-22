@@ -52,11 +52,14 @@ async function buildJson({script, sourceDir, writeAsset}) {
   }
 }
 
-async function processScript({ from, to, isDebug, workDir, distDir, addAsset, type }) {
+async function processScript({ from, to, isDebug, workDir, distDir, addAsset, type, staticControlFile }) {
   const entry = from;
   const filename = to;
 
   const defaultParams = {
+    module: {
+      rules: [],
+    },
     resolve: {
       modules: [
         path.join(process.cwd(), 'node_modules')
@@ -66,9 +69,17 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
       alias: {
         'cmake-loader': path.resolve(__dirname, 'loader/CMakeLoader.mjs'),
         'module-loader': path.resolve(__dirname, 'loader/ModuleLoader.mjs'),
+        'uic-static-loader': path.resolve(__dirname, 'loader/UICStaticLoader.mjs'),
       },
     },
   };
+
+  if (staticControlFile) {
+    defaultParams.module.rules.push({
+      test: staticControlFile,
+      loader: 'uic-static-loader',
+    });
+  }
 
   const debugParams = {
     ...defaultParams,

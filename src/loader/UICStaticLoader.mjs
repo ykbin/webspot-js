@@ -6,6 +6,6 @@ export default function(source) {
   const callback = this.async();
 	(async () => {
     const module = await import(resourceUrl);
-		return BuildScript.makePrimitiveJsonScript(module);
+		return BuildScript.makeStaticRegisterScript(module);
 	})().then((res) => callback(undefined, res), (err) => callback(err));
 }
