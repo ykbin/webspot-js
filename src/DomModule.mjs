@@ -309,9 +309,9 @@ async function generate(context) {
             const controlElm = templateElm.content.firstElementChild;
             element.id && (controlElm.id = element.id);
     
-            let portClass = docBundleModule.PORT_CLASS;
-            if (!portClass && docBundleModule.template.CLASS) {
-              portClass = docBundleModule.template.CLASS.PORT;
+            let portClass = ctlBundleModule.PORT_CLASS;
+            if (!portClass && ctlBundleModule.template.CLASS) {
+              portClass = ctlBundleModule.template.CLASS.PORT;
             }
 
             if (portClass) {
