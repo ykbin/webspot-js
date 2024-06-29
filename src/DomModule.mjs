@@ -156,7 +156,11 @@ async function generate(context) {
           const innerHTML = rootElm.innerHTML;
           dom = new JSDOM(HTML);
 
-          const portClass = docBundleModule.template.CLASS.PORT;
+          let portClass = docBundleModule.PORT_CLASS;
+          if (!portClass && docBundleModule.template.CLASS) {
+            portClass = docBundleModule.template.CLASS.PORT;
+          }
+
           if (portClass) {
             const documentElement = dom.window.document.documentElement;
             const portElm = documentElement.classList.contains(portClass) ? documentElement : documentElement.querySelector(`.${portClass}`);
