@@ -172,7 +172,7 @@ async function generate(context) {
             to: cssFilename,
             prop: null,
             isDebug,
-            workDir,
+            workDir: binaryDir,
             isInlineSvg: true,
             content: docBundleModule.CSS,
           });
@@ -332,7 +332,7 @@ async function generate(context) {
               to: cssFilename,
               prop: null,
               isDebug,
-              workDir,
+              workDir: binaryDir,
               isInlineSvg: true,
               content: ctlBundleModule.CSS,
             });
@@ -377,7 +377,7 @@ async function generate(context) {
             to: cssFilename,
             prop: null,
             isDebug,
-            workDir,
+            workDir: binaryDir,
             isInlineSvg: true,
             content: ctlBundleModule.CSS,
           });
