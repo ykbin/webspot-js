@@ -5,22 +5,22 @@ async function makeStaticRegisterScript(module)
   const {PKG, CTLS} = module;
 
   let scriptContent = `import { ControlManager } from 'webnetq-js';\n\n`;
-  for (const key in CTLS) {
-    scriptContent += `import { default as ${key} } from '${PKG}/control/${key}';\n`;
+  for (const name in CTLS) {
+    scriptContent += `import { default as ${name} } from '${PKG}/control/${name}';\n`;
   };
   scriptContent += `\n`;
 
   scriptContent += `const manager = ControlManager.getInstance();\n\n`;
 
-  for (const key in CTLS) {
-    const ctlModule = await import(`${PKG}/control/${key}/template`);
-    for (const iter of ['NAME', 'ROOT_HTML', 'CSS', 'ROOT_CLASS']) {
+  for (const name in CTLS) {
+    const ctlModule = await import(`${PKG}/control/${name}/template`);
+    for (const iter of ['ROOT_HTML', 'CSS', 'ROOT_CLASS']) {
       if (typeof ctlModule[iter] !== 'string') {
-        throw `Can't find ${iter} for '${key}' control`;
+        throw `Can't find ${iter} for '${name}' control`;
       }
     }
     const ctlParams = {
-      name: ctlModule.NAME,
+      name,
       rootHTML: ctlModule.ROOT_HTML,
       rootCSS: ctlModule.CSS,
       rootClass: ctlModule.ROOT_CLASS,
@@ -29,16 +29,16 @@ async function makeStaticRegisterScript(module)
       ctlParams.portClass = ctlModule.PORT_CLASS;
     }
     else if (typeof ctlModule.PORT_CLASS !== 'undefined') {
-      throw `Wrong type of 'PORT_CLASS' for '${key}' control`;
+      throw `Wrong type of 'PORT_CLASS' for '${name}' control`;
     }
-    scriptContent += `manager.register(${key}, ${JSON.stringify(ctlParams)});\n`;
+    scriptContent += `manager.register(${name}, ${JSON.stringify(ctlParams)});\n`;
   };
   scriptContent += `\n`;
 
   scriptContent += `export const PKG = '${PKG}';\n`;
   scriptContent += `export const CTLS = {\n`;
-  for (const key in CTLS) {
-    scriptContent += `  ${key},\n`;
+  for (const name in CTLS) {
+    scriptContent += `  ${name},\n`;
   };
   scriptContent += `};\n`;
 
