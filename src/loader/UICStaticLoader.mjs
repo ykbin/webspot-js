@@ -1,4 +1,5 @@
 import { pathToFileURL } from 'node:url';
+import { BuildScript } from 'webnetq-js';
 
 function makeCtlModuleUrl(pkg, name)
 {
@@ -26,16 +27,17 @@ async function makeStaticRegisterScript(module)
         throw `Can't find ${iter} for '${key}' control`;
       }
     }
+    const template = ctlModule.TEMPLATE;
     const ctlParams = {
-      name: ctlModule.NAME,
-      rootHTML: ctlModule.ROOT_HTML,
-      rootCSS: ctlModule.CSS,
-      rootClass: ctlModule.ROOT_CLASS,
+      name: template.NAME,
+      rootHTML: template.ROOT_HTML,
+      rootCSS: template.CSS,
+      rootClass: template.ROOT_CLASS,
     };
-    if (ctlModule.PORT_CLASS) {
-      ctlParams.portClass = ctlModule.PORT_CLASS;
+    if (template.PORT_CLASS) {
+      ctlParams.portClass = template.PORT_CLASS;
     }
-    scriptContent += `manager.register(${key}, ${JSON.stringify(ctlParams)})\n`;
+    scriptContent += `manager.manager (${key}, ${JSON.stringify(ctlParams)})\n`;
   };
   scriptContent += `\n`;
 
