@@ -1,41 +1,36 @@
 import { pathToFileURL } from 'node:url';
 import { BuildScript } from 'webnetq-js';
 
-function makeCtlModuleUrl(pkg, name)
-{
-  return `${pkg}/control/${name}`;
-}
-
 async function makeStaticRegisterScript(module)
 {
   const {PKG, CTLS} = module;
 
   let scriptContent = `import { ControlManager } from 'webnetq-js';\n\n`;
   for (const key in CTLS) {
-    const ctlModuleUrl = makeCtlModuleUrl(PKG, key);
-    scriptContent += `import { default as ${key} } from '${ctlModuleUrl}';\n`;
+    scriptContent += `import { default as ${key} } from '${PKG}/control/${key}';\n`;
   };
   scriptContent += `\n`;
 
   scriptContent += `const manager = ControlManager.getInstance();\n\n`;
 
   for (const key in CTLS) {
-    const ctlModuleUrl = makeCtlModuleUrl(PKG, key);
-    const ctlModule = await import(ctlModuleUrl);
+    const ctlModule = await import(`${PKG}/template/${key}`);
     for (const iter of ['NAME', 'ROOT_HTML', 'CSS', 'ROOT_CLASS']) {
       if (typeof ctlModule[iter] !== 'string') {
         throw `Can't find ${iter} for '${key}' control`;
       }
     }
-    const template = ctlModule.TEMPLATE;
     const ctlParams = {
-      name: template.NAME,
-      rootHTML: template.ROOT_HTML,
-      rootCSS: template.CSS,
-      rootClass: template.ROOT_CLASS,
+      name: ctlModule.NAME,
+      rootHTML: ctlModule.ROOT_HTML,
+      rootCSS: ctlModule.CSS,
+      rootClass: ctlModule.ROOT_CLASS,
     };
-    if (template.PORT_CLASS) {
-      ctlParams.portClass = template.PORT_CLASS;
+    if (typeof ctlModule.PORT_CLASS === 'string') {
+      ctlParams.portClass = ctlModule.PORT_CLASS;
+    }
+    else if (typeof ctlModule.PORT_CLASS !== 'undefined') {
+      throw `Wrong type of 'PORT_CLASS' for '${key}' control`;
     }
     scriptContent += `manager.manager (${key}, ${JSON.stringify(ctlParams)})\n`;
   };
