@@ -1,5 +1,4 @@
 import { pathToFileURL } from 'node:url';
-import { BuildScript } from 'webnetq-js';
 
 async function makeStaticRegisterScript(module)
 {
@@ -32,7 +31,7 @@ async function makeStaticRegisterScript(module)
     else if (typeof ctlModule.PORT_CLASS !== 'undefined') {
       throw `Wrong type of 'PORT_CLASS' for '${key}' control`;
     }
-    scriptContent += `manager.manager (${key}, ${JSON.stringify(ctlParams)})\n`;
+    scriptContent += `manager.register(${key}, ${JSON.stringify(ctlParams)});\n`;
   };
   scriptContent += `\n`;
 
