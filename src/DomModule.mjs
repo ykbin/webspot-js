@@ -132,7 +132,7 @@ async function generate(context) {
           docModules[pkg] = docModules[pkg] || {};
           let docBundleModule = docModules[pkg][name];
           if (!docBundleModule) {
-            console.log(`Started processing document ${pkg}/${name}`);
+            /*console.log(`Started processing document ${pkg}/${name}`);
             await scriptModule.processScript({
               from: 'index.mjs',
               to: `${name}.bundle.js`,
@@ -142,7 +142,8 @@ async function generate(context) {
               addAsset: null,
               type: 'module',
             });
-            docBundleModule = await import(pathToFileURL(path.join(docsDir, `${name}.bundle.js`)));
+            docBundleModule = await import(pathToFileURL(path.join(docsDir, `${name}.bundle.js`)));*/
+            docBundleModule = await import(`${pkg}/document/${name}/template`);
             docModules[pkg][name] = docBundleModule;
           }
 
@@ -279,7 +280,7 @@ async function generate(context) {
 
           let ctlBundleModule = ctlModules[name];
           if (!ctlBundleModule) {
-            console.log(`Started processing control ${pkg}/${name}`);
+            /*console.log(`Started processing control ${pkg}/${name}`);
             await scriptModule.processScript({
               from: 'index.mjs',
               to: `${name}.bundle.js`,
@@ -289,7 +290,8 @@ async function generate(context) {
               addAsset: null,
               type: 'module',
             });
-            ctlBundleModule = await import(pathToFileURL(path.join(ctlsDir, `${name}.bundle.js`)));
+            ctlBundleModule = await import(pathToFileURL(path.join(ctlsDir, `${name}.bundle.js`)));*/
+            ctlBundleModule = await import(`${pkg}/control/${name}/template`);
             ctlModules[name] = ctlBundleModule;
           }
 
@@ -353,7 +355,7 @@ async function generate(context) {
   
         let ctlBundleModule = ctlModules[name];
         if (!ctlBundleModule) {
-          console.log(`Started processing control ${pkg}/${name}`);
+          /*console.log(`Started processing control ${pkg}/${name}`);
           await scriptModule.processScript({
             from: 'index.mjs',
             to: `${name}.bundle.js`,
@@ -363,7 +365,8 @@ async function generate(context) {
             addAsset: null,
             type: 'module',
           });
-          ctlBundleModule = await import(pathToFileURL(path.join(ctlsDir, `${name}.bundle.js`)));
+          ctlBundleModule = await import(pathToFileURL(path.join(ctlsDir, `${name}.bundle.js`)));*/
+          ctlBundleModule = await import(`${pkg}/control/${name}/template`);
           ctlModules[name] = ctlBundleModule;
         }
   
