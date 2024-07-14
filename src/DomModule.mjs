@@ -94,8 +94,6 @@ async function generate(context) {
 
   const docModules = {};
   const ctlModules = {};
-  const docsDir = path.join(binaryDir, 'webspot', 'documents');
-  const ctlsDir = path.join(binaryDir, 'webspot', 'controls');
 
   for (const [ name, params ] of Object.entries(dom.targets || {})) {
     const parameters = getOptions(params);
@@ -132,17 +130,6 @@ async function generate(context) {
           docModules[pkg] = docModules[pkg] || {};
           let docBundleModule = docModules[pkg][name];
           if (!docBundleModule) {
-            /*console.log(`Started processing document ${pkg}/${name}`);
-            await scriptModule.processScript({
-              from: 'index.mjs',
-              to: `${name}.bundle.js`,
-              isDebug,
-              workDir,
-              distDir: docsDir,
-              addAsset: null,
-              type: 'module',
-            });
-            docBundleModule = await import(pathToFileURL(path.join(docsDir, `${name}.bundle.js`)));*/
             docBundleModule = await import(`${pkg}/document/${name}/template`);
             docModules[pkg][name] = docBundleModule;
           }
@@ -172,7 +159,7 @@ async function generate(context) {
             to: cssFilename,
             prop: null,
             isDebug,
-            workDir: binaryDir,
+            workDir,
             isInlineSvg: true,
             content: docBundleModule.CSS,
           });
@@ -280,17 +267,6 @@ async function generate(context) {
 
           let ctlBundleModule = ctlModules[name];
           if (!ctlBundleModule) {
-            /*console.log(`Started processing control ${pkg}/${name}`);
-            await scriptModule.processScript({
-              from: 'index.mjs',
-              to: `${name}.bundle.js`,
-              isDebug,
-              workDir,
-              distDir: ctlsDir,
-              addAsset: null,
-              type: 'module',
-            });
-            ctlBundleModule = await import(pathToFileURL(path.join(ctlsDir, `${name}.bundle.js`)));*/
             ctlBundleModule = await import(`${pkg}/control/${name}/template`);
             ctlModules[name] = ctlBundleModule;
           }
@@ -332,7 +308,7 @@ async function generate(context) {
               to: cssFilename,
               prop: null,
               isDebug,
-              workDir: binaryDir,
+              workDir,
               isInlineSvg: true,
               content: ctlBundleModule.CSS,
             });
@@ -355,17 +331,6 @@ async function generate(context) {
   
         let ctlBundleModule = ctlModules[name];
         if (!ctlBundleModule) {
-          /*console.log(`Started processing control ${pkg}/${name}`);
-          await scriptModule.processScript({
-            from: 'index.mjs',
-            to: `${name}.bundle.js`,
-            isDebug,
-            workDir,
-            distDir: ctlsDir,
-            addAsset: null,
-            type: 'module',
-          });
-          ctlBundleModule = await import(pathToFileURL(path.join(ctlsDir, `${name}.bundle.js`)));*/
           ctlBundleModule = await import(`${pkg}/control/${name}/template`);
           ctlModules[name] = ctlBundleModule;
         }
@@ -377,7 +342,7 @@ async function generate(context) {
             to: cssFilename,
             prop: null,
             isDebug,
-            workDir: binaryDir,
+            workDir,
             isInlineSvg: true,
             content: ctlBundleModule.CSS,
           });
