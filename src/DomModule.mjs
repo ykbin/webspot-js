@@ -146,7 +146,7 @@ async function generate(context) {
             docModules[pkg][name] = docBundleModule;
           }
 
-          const HTML = docBundleModule.template.HTML;
+          const HTML = docBundleModule.ROOT_HTML;
           if (typeof HTML !== 'string') {
             console.log('doc module:', docBundleModule);
             console.log('doc module.default:', docBundleModule.default);
@@ -157,10 +157,6 @@ async function generate(context) {
           dom = new JSDOM(HTML);
 
           let portClass = docBundleModule.PORT_CLASS;
-          if (!portClass && docBundleModule.template.CLASS) {
-            portClass = docBundleModule.template.CLASS.PORT;
-          }
-
           if (portClass) {
             const documentElement = dom.window.document.documentElement;
             const portElm = documentElement.classList.contains(portClass) ? documentElement : documentElement.querySelector(`.${portClass}`);
@@ -177,7 +173,7 @@ async function generate(context) {
             isDebug,
             workDir,
             isInlineSvg: true,
-            content: docBundleModule.template.CSS,
+            content: docBundleModule.CSS,
           });
 
           pkgDefault = pkg;
@@ -298,7 +294,7 @@ async function generate(context) {
           }
 
           if (htmlEnable) {
-            const HTML = ctlBundleModule.template.HTML;
+            const HTML = ctlBundleModule.ROOT_HTML;
             if (typeof HTML !== 'string') {
               console.log('module:', ctlBundleModule);
               console.log('module.default:', ctlBundleModule.default);
@@ -310,10 +306,6 @@ async function generate(context) {
             element.id && (controlElm.id = element.id);
     
             let portClass = ctlBundleModule.PORT_CLASS;
-            if (!portClass && ctlBundleModule.template.CLASS) {
-              portClass = ctlBundleModule.template.CLASS.PORT;
-            }
-
             if (portClass) {
               const portElm = controlElm.classList.contains(portClass) ? controlElm : controlElm.querySelector(`.${portClass}`);
               if (!portElm) {
@@ -340,7 +332,7 @@ async function generate(context) {
               isDebug,
               workDir,
               isInlineSvg: true,
-              content: ctlBundleModule.template.CSS,
+              content: ctlBundleModule.CSS,
             });
             cssMap[pkg][name] = true;
           }
@@ -384,7 +376,7 @@ async function generate(context) {
             isDebug,
             workDir,
             isInlineSvg: true,
-            content: ctlBundleModule.template.CSS,
+            content: ctlBundleModule.CSS,
           });
           cssMap[pkg][name] = true;
         }
