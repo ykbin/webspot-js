@@ -53,7 +53,6 @@ async function buildJson({script, sourceDir, writeAsset}) {
 }
 
 async function processScript({ from, to, isDebug, workDir, distDir, addAsset, type, staticControlFile }) {
-  const entry = from;
   const filename = to;
 
   const defaultParams = {
@@ -74,12 +73,15 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
     },
   };
 
+  const index = [];
   if (staticControlFile) {
     defaultParams.module.rules.push({
       test: staticControlFile,
       loader: 'uic-static-loader',
     });
+    index.push(staticControlFile);
   }
+  index.push(path.join(workDir, from));
 
   const debugParams = {
     ...defaultParams,
@@ -110,9 +112,8 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
   }
 
   params.entry = {
-    index: (staticControlFile ? [staticControlFile] : []).concat(path.join(workDir, entry))
+    index
   };
-  console.log(`>>> ${params.entry}`);
 
   const compiler = webpack(params);
   await new Promise((resolve, reject) => {
