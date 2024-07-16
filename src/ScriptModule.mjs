@@ -88,6 +88,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
     output: {
       sourceMapFilename: `${filename}.map`,
       path: distDir,
+      filename,
     },
   };
 
@@ -96,6 +97,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
     mode: 'production',
     output: {
       path: distDir,
+      filename,
     },
   };
 
@@ -108,10 +110,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
   }
 
   params.entry = {
-    index: {
-      import: (staticControlFile ? [staticControlFile] : []).push(path.join(workDir, entry)),
-      filename,
-    },
+    index: (staticControlFile ? [staticControlFile] : []).push(path.join(workDir, entry))
   };
 
   const compiler = webpack(params);
