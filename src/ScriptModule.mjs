@@ -109,7 +109,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
 
   params.entry = {
     index: {
-      import: path.join(workDir, entry),
+      import: (staticControlFile ? [staticControlFile] : []).push(path.join(workDir, entry)),
       filename,
     },
   };
