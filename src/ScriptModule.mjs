@@ -112,6 +112,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
   params.entry = {
     index: (staticControlFile ? [staticControlFile] : []).push(path.join(workDir, entry))
   };
+  console.log(`>>> ${params.entry}`);
 
   const compiler = webpack(params);
   await new Promise((resolve, reject) => {
