@@ -22,7 +22,7 @@ async function makeStaticRegisterScript(module)
     const ctlParams = {
       name,
       rootHTML: ctlModule.ROOT_HTML,
-      rootCSS: ctlModule.CSS,
+      // rootCSS: ctlModule.CSS,
       rootClass: ctlModule.ROOT_CLASS,
     };
     if (typeof ctlModule.PORT_CLASS === 'string') {
