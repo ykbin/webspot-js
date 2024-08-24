@@ -15,8 +15,12 @@ async function makeStaticRegisterScript(module)
   for (const name in CTLS) {
     const ctlModule = await import(`${PKG}/control/${name}/template`);
     for (const iter of ['ROOT_HTML', 'CSS', 'ROOT_CLASS']) {
-      if (typeof ctlModule[iter] !== 'string') {
+      if (!(iter in ctlModule)) {
         throw `Can't find ${iter} for '${name}' control`;
+      }
+      if (typeof ctlModule[iter] !== 'string') {
+        console.info(`${iter}:`, ctlModule[iter]);
+        throw `Class ${iter} isn't string of '${name}' control`;
       }
     }
     const ctlParams = {
