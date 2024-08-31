@@ -6,6 +6,7 @@ export default function(source) {
   const callback = this.async();
 	(async () => {
     const { buildComponent } = await import(resourceUrl);
-		return BuildScript.makePrimitiveJsonScript(buildComponent());
+    const component = (buildComponent instanceof Promise) ? await buildComponent() : buildComponent();
+		return BuildScript.makePrimitiveJsonScript(component);
 	})().then((res) => callback(undefined, res), (err) => callback(err));
 }
