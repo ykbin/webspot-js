@@ -131,6 +131,8 @@ async function generate(context) {
           let docBundleModule = docModules[pkg][name];
           if (!docBundleModule) {
             docBundleModule = await import(`${pkg}/document/${name}/template`);
+            if (typeof docBundleModule.buildComponent === 'function')
+              docBundleModule = docBundleModule.buildComponent();
             docModules[pkg][name] = docBundleModule;
           }
 
@@ -268,6 +270,8 @@ async function generate(context) {
           let ctlBundleModule = ctlModules[name];
           if (!ctlBundleModule) {
             ctlBundleModule = await import(`${pkg}/control/${name}/template`);
+            if (typeof ctlBundleModule.buildComponent === 'function')
+              ctlBundleModule = ctlBundleModule.buildComponent();
             ctlModules[name] = ctlBundleModule;
           }
 
@@ -332,6 +336,8 @@ async function generate(context) {
         let ctlBundleModule = ctlModules[name];
         if (!ctlBundleModule) {
           ctlBundleModule = await import(`${pkg}/control/${name}/template`);
+          if (typeof ctlBundleModule.buildComponent === 'function')
+            ctlBundleModule = ctlBundleModule.buildComponent();
           ctlModules[name] = ctlBundleModule;
         }
   
