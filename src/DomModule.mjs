@@ -131,14 +131,17 @@ async function generate(context) {
           let docBundleModule = docModules[pkg][name];
           if (!docBundleModule) {
             docBundleModule = await import(`${pkg}/document/${name}/template`);
+            if (typeof docBundleModule.buildComponent === 'function')
+              docBundleModule = docBundleModule.buildComponent();
+            if (docBundleModule instanceof Promise)
+              docBundleModule = await docBundleModule;
             docModules[pkg][name] = docBundleModule;
           }
 
           const HTML = docBundleModule.ROOT_HTML;
           if (typeof HTML !== 'string') {
             console.log('doc module:', docBundleModule);
-            console.log('doc module.default:', docBundleModule.default);
-            throw `Not exists HTML for ${name}`;
+            throw `Not exists ROOT_HTML for ${name}`;
           }
 
           const innerHTML = rootElm.innerHTML;
@@ -255,7 +258,6 @@ async function generate(context) {
         if (element.tagName.toLowerCase() === 'webctl') {
           const pkg = element.getAttribute("pkg") || pkgDefault;
           const name = element.getAttribute("ctl");
-          const htmlEnable = element.getAttribute("html") !== 'disable';
 
           const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
           const pkgMainDir = fileURLToPath(path.dirname(pkgMainUrl));
@@ -268,38 +270,36 @@ async function generate(context) {
           let ctlBundleModule = ctlModules[name];
           if (!ctlBundleModule) {
             ctlBundleModule = await import(`${pkg}/control/${name}/template`);
+            if (typeof ctlBundleModule.buildComponent === 'function')
+              ctlBundleModule = ctlBundleModule.buildComponent();
+            if (ctlBundleModule instanceof Promise)
+              ctlBundleModule = await ctlBundleModule;
             ctlModules[name] = ctlBundleModule;
           }
 
-          if (htmlEnable) {
-            const HTML = ctlBundleModule.ROOT_HTML;
-            if (typeof HTML !== 'string') {
-              console.log('module:', ctlBundleModule);
-              console.log('module.default:', ctlBundleModule.default);
-              throw `Not exists HTML for ${name}`;
+          const HTML = ctlBundleModule.ROOT_HTML;
+          if (typeof HTML !== 'string') {
+            console.log('ctl module:', ctlBundleModule);
+            throw `Not exists ROOT_HTML for ${name}`;
+          }
+  
+          templateElm.innerHTML = HTML;
+          const controlElm = templateElm.content.firstElementChild;
+          element.id && (controlElm.id = element.id);
+  
+          let portClass = ctlBundleModule.PORT_CLASS;
+          if (portClass) {
+            const portElm = controlElm.classList.contains(portClass) ? controlElm : controlElm.querySelector(`.${portClass}`);
+            if (!portElm) {
+              throw `Cannot find port element with ${portClass} classname of ${name}`
             }
-    
-            templateElm.innerHTML = HTML;
-            const controlElm = templateElm.content.firstElementChild;
-            element.id && (controlElm.id = element.id);
-    
-            let portClass = ctlBundleModule.PORT_CLASS;
-            if (portClass) {
-              const portElm = controlElm.classList.contains(portClass) ? controlElm : controlElm.querySelector(`.${portClass}`);
-              if (!portElm) {
-                throw `Cannot find port element with ${portClass} classname of ${name}`
-              }
-              while (element.firstChild) {
-                const child = element.removeChild(element.firstChild);
-                portElm.appendChild(child);
-              }
+            while (element.firstChild) {
+              const child = element.removeChild(element.firstChild);
+              portElm.appendChild(child);
             }
+          }
 
-            element.replaceWith(controlElm);
-          }
-          else {
-            element.remove();
-          }
+          element.replaceWith(controlElm);
 
           cssMap[pkg] = cssMap[pkg] || {};
           if (!cssMap[pkg][name]) {
@@ -332,6 +332,10 @@ async function generate(context) {
         let ctlBundleModule = ctlModules[name];
         if (!ctlBundleModule) {
           ctlBundleModule = await import(`${pkg}/control/${name}/template`);
+          if (typeof ctlBundleModule.buildComponent === 'function')
+            ctlBundleModule = ctlBundleModule.buildComponent();
+          if (ctlBundleModule instanceof Promise)
+            ctlBundleModule = await ctlBundleModule;
           ctlModules[name] = ctlBundleModule;
         }
   

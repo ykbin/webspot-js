@@ -13,7 +13,11 @@ async function makeStaticRegisterScript(module)
   scriptContent += `const manager = ControlManager.getInstance();\n\n`;
 
   for (const name in CTLS) {
-    const ctlModule = await import(`${PKG}/control/${name}/template`);
+    let ctlModule = await import(`${PKG}/control/${name}/template`);
+    if (typeof ctlModule.buildComponent === 'function')
+      ctlModule = ctlModule.buildComponent();
+    if (ctlModule instanceof Promise)
+      ctlModule = await ctlModule;
     for (const iter of ['ROOT_HTML', 'CSS', 'ROOT_CLASS']) {
       if (!(iter in ctlModule)) {
         throw `Can't find ${iter} for '${name}' control`;

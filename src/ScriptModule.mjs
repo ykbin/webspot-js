@@ -68,6 +68,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
       alias: {
         'cmake-loader': path.resolve(__dirname, 'loader/CMakeLoader.mjs'),
         'module-loader': path.resolve(__dirname, 'loader/ModuleLoader.mjs'),
+        'uictmplt-loader': path.resolve(__dirname, 'loader/UICTemplateLoader.mjs'),
         'uic-static-loader': path.resolve(__dirname, 'loader/UICStaticLoader.mjs'),
       },
     },
