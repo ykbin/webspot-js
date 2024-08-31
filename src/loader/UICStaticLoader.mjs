@@ -14,10 +14,10 @@ async function makeStaticRegisterScript(module)
 
   for (const name in CTLS) {
     let ctlModule = await import(`${PKG}/control/${name}/template`);
-    if (ctlModule.buildComponent instanceof Promise)
-      ctlModule = await ctlModule.buildComponent();
-    else if (typeof ctlModule.buildComponent === 'function')
+    if (typeof ctlModule.buildComponent === 'function')
       ctlModule = ctlModule.buildComponent();
+    if (ctlModule instanceof Promise)
+      ctlModule = await ctlModule;
     for (const iter of ['ROOT_HTML', 'CSS', 'ROOT_CLASS']) {
       if (!(iter in ctlModule)) {
         throw `Can't find ${iter} for '${name}' control`;
