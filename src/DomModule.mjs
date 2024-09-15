@@ -258,6 +258,8 @@ async function generate(context) {
         if (element.tagName.toLowerCase() === 'webctl') {
           const pkg = element.getAttribute("pkg") || pkgDefault;
           const name = element.getAttribute("ctl");
+          if (!name)
+            throw `Cannot find attribute 'ctl' in webctl`;
 
           const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
           const pkgMainDir = fileURLToPath(path.dirname(pkgMainUrl));
