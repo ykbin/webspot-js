@@ -8,16 +8,16 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yakubins/webspot-js.git"
+    "url": "git+https://github.com/ykbin/webspot-js.git"
   },
   "keywords": [
     "web"
   ],
   "author": "Yurii Yakubin",
   "bugs": {
-    "url": "https://github.com/yakubins/webspot-js/issues"
+    "url": "https://github.com/ykbin/webspot-js/issues"
   },
-  "homepage": "https://github.com/yakubins/webspot-js#readme",
+  "homepage": "https://github.com/ykbin/webspot-js#readme",
   "dependencies": {
     "jsdom": "^23.0.1",
     "webpack": "^5.88.2",
@@ -30,7 +30,7 @@
     "raw-loader": "^4.0.2",
     "svgo": "^3.3.2",
     
-    "webcomctl-js": "github:yakubins/webcomctl-js"
+    "webcomctl-js": "github:ykbin/webcomctl-js"
   },
   "devDependencies": {
   }
