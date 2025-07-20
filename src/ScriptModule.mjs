@@ -66,10 +66,10 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
     },
     resolveLoader: {
       alias: {
-        'cmake-loader': path.resolve(__dirname, 'loader/CMakeLoader.mjs'),
-        'module-loader': path.resolve(__dirname, 'loader/ModuleLoader.mjs'),
-        'uictmplt-loader': path.resolve(__dirname, 'loader/UICTemplateLoader.mjs'),
-        'uic-static-loader': path.resolve(__dirname, 'loader/UICStaticLoader.mjs'),
+        'cmake-loader': fileURLToPath(import.meta.resolve("webcomctl-js/loader/cmake-loader")),
+        'module-loader': fileURLToPath(import.meta.resolve("webcomctl-js/loader/module-loader")),
+        'uic-static-loader': fileURLToPath(import.meta.resolve("webcomctl-js/loader/uic-static-loader")),
+        'uictmplt-loader': fileURLToPath(import.meta.resolve("webcomctl-js/loader/uictmplt-loader")),
       },
     },
   };
