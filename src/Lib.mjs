@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 
 export async function copyFileIfDifferent(inFilename, outFilename) {
   const inStats = await fs.promises.stat(inFilename);

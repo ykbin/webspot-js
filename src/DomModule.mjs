@@ -1,8 +1,9 @@
 import path from "node:path";
 import fs from "node:fs";
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import url from 'node:url';
 import jsdom from "jsdom";
 import { resolve as importMetaResolve } from 'import-meta-resolve';
+import webpack from 'webpack';
 
 import { copyFileIfDifferent } from './Lib.mjs';
 import styleModule from './StyleModule.mjs';
@@ -87,13 +88,63 @@ function getDarkLightFileList(params)
   return [];
 }
 
+async function buildPackage(configName, isDebug, outputPath) {
+  console.log(`Build ${configName}...`);
+  const configPath = import.meta.resolve(configName);
+
+  const module = await import(configPath);
+  let configObj = module.default({}, {
+    mode: isDebug ? "development" : "production",
+    outputPath,
+  });
+  if (configObj instanceof Promise)
+    configObj = await configObj;
+
+  configObj.context = path.dirname(url.fileURLToPath(configPath));
+  configObj.resolve = configObj.resolve || {};
+  configObj.resolve.modules = configObj.resolve.modules || [];
+  configObj.resolve.modules.push(path.join(process.cwd(), 'node_modules'));
+
+  const compiler = webpack(configObj);
+  await new Promise((resolve, reject) => {
+    compiler.run((err, stats) => {
+      if (!err && stats.hasErrors()) {
+        switch (stats.compilation.errors.length) {
+        case 0: err = stats; break;
+        case 1: err = stats.compilation.errors[0]; break;
+        default: err = stats.compilation.errors; break;
+        }
+      }
+      err ? reject(err) : resolve(stats);
+    });
+  });
+  console.log(`Build ${configName}...done`);
+}
+
 async function generate(context) {
   const {dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, writeAsset, addAsset, setApplication} = context;
 
   if (!dom) return;
 
-  const docModules = {};
-  const ctlModules = {};
+  const webcomctlPath = path.resolve(binaryDir, "generated-packages/webcomctl-js");
+
+  await buildPackage("webcomctl-js/builders.config.mjs", isDebug, webcomctlPath);
+  await buildPackage("webcomctl-js/templates.config.mjs", isDebug, webcomctlPath);
+  await buildPackage("webcomctl-js/controls.config.mjs", isDebug, webcomctlPath);
+
+  const buildersEntry = path.join(webcomctlPath, "builders.mjs");
+  const templatesEntry = path.join(webcomctlPath, "templates.mjs");
+  const controlsEntry = path.join(webcomctlPath, "controls.mjs");
+
+  const resolveAlias = {
+    "webcomctl-js/builders": buildersEntry,
+    "webcomctl-js/templates": templatesEntry,
+    "webcomctl-js/controls": controlsEntry,
+  };
+
+  const templates = {
+    "webcomctl-js": await import(url.pathToFileURL(templatesEntry)),
+  };
 
   for (const [ name, params ] of Object.entries(dom.targets || {})) {
     const parameters = getOptions(params);
@@ -125,19 +176,9 @@ async function generate(context) {
           const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
           const pkgMainDir = path.dirname(pkgMainUrl);
           const docUrl = path.join(pkgMainDir, 'document', name, 'index.mjs');
-          const workDir = path.dirname(fileURLToPath(docUrl));
+          const workDir = path.dirname(url.fileURLToPath(docUrl));
 
-          docModules[pkg] = docModules[pkg] || {};
-          let docBundleModule = docModules[pkg][name];
-          if (!docBundleModule) {
-            docBundleModule = await import(`${pkg}/document/${name}/template`);
-            if (typeof docBundleModule.buildComponent === 'function')
-              docBundleModule = docBundleModule.buildComponent();
-            if (docBundleModule instanceof Promise)
-              docBundleModule = await docBundleModule;
-            docModules[pkg][name] = docBundleModule;
-          }
-
+          const docBundleModule = templates[pkg][name];
           const HTML = docBundleModule.ROOT_HTML;
           if (typeof HTML !== 'string') {
             console.log('doc module:', docBundleModule);
@@ -262,23 +303,14 @@ async function generate(context) {
             throw `Cannot find attribute 'ctl' in webctl`;
 
           const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
-          const pkgMainDir = fileURLToPath(path.dirname(pkgMainUrl));
+          const pkgMainDir = url.fileURLToPath(path.dirname(pkgMainUrl));
           let ctlFile = path.join(pkgMainDir, name, 'index.mjs');
           if (!fs.existsSync(ctlFile)) {
             ctlFile = path.join(pkgMainDir, 'control', name, 'index.mjs');
           }
           const workDir = path.dirname(ctlFile);
 
-          let ctlBundleModule = ctlModules[name];
-          if (!ctlBundleModule) {
-            ctlBundleModule = await import(`${pkg}/control/${name}/template`);
-            if (typeof ctlBundleModule.buildComponent === 'function')
-              ctlBundleModule = ctlBundleModule.buildComponent();
-            if (ctlBundleModule instanceof Promise)
-              ctlBundleModule = await ctlBundleModule;
-            ctlModules[name] = ctlBundleModule;
-          }
-
+          const ctlBundleModule = templates[pkg][name];
           const HTML = ctlBundleModule.ROOT_HTML;
           if (typeof HTML !== 'string') {
             console.log('ctl module:', ctlBundleModule);
@@ -323,24 +355,15 @@ async function generate(context) {
     }
 
     if (staticControlFile) {
-      const module = await import(pathToFileURL(staticControlFile));
+      const module = await import(url.pathToFileURL(staticControlFile));
       const pkg = module.PKG
       for (const name in module.CTLS) {
         const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
-        const pkgMainDir = fileURLToPath(path.dirname(pkgMainUrl));
+        const pkgMainDir = url.fileURLToPath(path.dirname(pkgMainUrl));
         let ctlFile = path.join(pkgMainDir, 'control', name, 'index.mjs');
         const workDir = path.dirname(ctlFile);
   
-        let ctlBundleModule = ctlModules[name];
-        if (!ctlBundleModule) {
-          ctlBundleModule = await import(`${pkg}/control/${name}/template`);
-          if (typeof ctlBundleModule.buildComponent === 'function')
-            ctlBundleModule = ctlBundleModule.buildComponent();
-          if (ctlBundleModule instanceof Promise)
-            ctlBundleModule = await ctlBundleModule;
-          ctlModules[name] = ctlBundleModule;
-        }
-  
+        const ctlBundleModule = templates[pkg][name];
         cssMap[pkg] = cssMap[pkg] || {};
         if (!cssMap[pkg][name]) {
           cssOptionList.push({
@@ -377,6 +400,7 @@ async function generate(context) {
         distDir,
         addAsset,
         staticControlFile,
+        resolveAlias,
       });
     }
 

@@ -1,10 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import url from 'node:url';
 import webpack from 'webpack';
 import { copyFileIfDifferent, getFilenamesFromParams } from './Lib.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
+const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function configure({script, sourceDir, binaryDir}) {
@@ -24,7 +24,7 @@ async function configure({script, sourceDir, binaryDir}) {
 async function buildConst({script, sourceDir, binaryDir}) {
   if (script && script.const) {
     const inFilename = path.resolve(sourceDir, script.const);
-    const { default: constants } = await import(pathToFileURL(inFilename));
+    const { default: constants } = await import(url.pathToFileURL(inFilename));
 
     let content = "";
   
@@ -44,7 +44,7 @@ async function buildJson({script, sourceDir, writeAsset}) {
     for (let i = 0; i < arr.length; i++) {
       const inFilename = path.resolve(sourceDir, arr[i]);
       const outFilename = path.basename(inFilename, '.mjs') + ".json";
-      const { default: module } = await import(pathToFileURL(inFilename));
+      const { default: module } = await import(url.pathToFileURL(inFilename));
       const content = JSON.stringify(module);
       await writeAsset(outFilename, content, {type: "application/json"});
       console.log(`[script.json] Generate ${outFilename}`);
@@ -52,7 +52,7 @@ async function buildJson({script, sourceDir, writeAsset}) {
   }
 }
 
-async function processScript({ from, to, isDebug, workDir, distDir, addAsset, type, staticControlFile }) {
+async function processScript({ from, to, isDebug, workDir, distDir, addAsset, type, staticControlFile, resolveAlias }) {
   const filename = to;
 
   const defaultParams = {
@@ -63,13 +63,16 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
       modules: [
         path.join(process.cwd(), 'node_modules')
       ],
+      alias: resolveAlias,
     },
     resolveLoader: {
       alias: {
-        'cmake-loader': fileURLToPath(import.meta.resolve("webcomctl-js/loader/cmake-loader")),
-        'module-loader': fileURLToPath(import.meta.resolve("webcomctl-js/loader/module-loader")),
-        'uic-static-loader': fileURLToPath(import.meta.resolve("webcomctl-js/loader/uic-static-loader")),
-        'uictmplt-loader': fileURLToPath(import.meta.resolve("webcomctl-js/loader/uictmplt-loader")),
+        'cmake-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/cmake-loader")),
+        'module-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/module-loader")),
+        'uic-static-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/uic-static-loader")),
+        // 'uictmplt-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/uictmplt-loader")),
+        'template-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/template-loader")),
+        'uictmplt-loader': `template-loader?templates=${url.pathToFileURL(resolveAlias["webcomctl-js/templates"])}`,
       },
     },
   };
@@ -79,6 +82,9 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
     defaultParams.module.rules.push({
       test: staticControlFile,
       loader: 'uic-static-loader',
+      options: {
+        "webcomctl-js": url.pathToFileURL(resolveAlias["webcomctl-js/templates"]),
+      },
     });
     index.push(staticControlFile);
   }
