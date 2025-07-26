@@ -88,22 +88,24 @@ function getDarkLightFileList(params)
   return [];
 }
 
-async function buildWebcomctlPackage(isDebug, outputPath) {
-  console.log('Build webcomctl-js...');
-  const bundleConfigPath = import.meta.resolve("webcomctl-js/bundle.config.mjs");
+async function buildPackage(configName, isDebug, outputPath) {
+  console.log(`Build ${configName}...`);
+  const configPath = import.meta.resolve(configName);
 
-  const bundleModule = await import(bundleConfigPath);
-  const webcomctlConfig = bundleModule.default({}, {
+  const module = await import(configPath);
+  let configObj = module.default({}, {
     mode: isDebug ? "development" : "production",
     outputPath,
   });
+  if (configObj instanceof Promise)
+    configObj = await configObj;
 
-  webcomctlConfig.context = path.dirname(url.fileURLToPath(bundleConfigPath));
-  webcomctlConfig.resolve = webcomctlConfig.resolve || {};
-  webcomctlConfig.resolve.modules = webcomctlConfig.resolve.modules || [];
-  webcomctlConfig.resolve.modules.push(path.join(process.cwd(), 'node_modules'));
+  configObj.context = path.dirname(url.fileURLToPath(configPath));
+  configObj.resolve = configObj.resolve || {};
+  configObj.resolve.modules = configObj.resolve.modules || [];
+  configObj.resolve.modules.push(path.join(process.cwd(), 'node_modules'));
 
-  const compiler = webpack(webcomctlConfig);
+  const compiler = webpack(configObj);
   await new Promise((resolve, reject) => {
     compiler.run((err, stats) => {
       if (!err && stats.hasErrors()) {
@@ -116,7 +118,7 @@ async function buildWebcomctlPackage(isDebug, outputPath) {
       err ? reject(err) : resolve(stats);
     });
   });
-  console.log('Build webcomctl-js...done');
+  console.log(`Build ${configName}...done`);
 }
 
 async function generate(context) {
@@ -125,17 +127,23 @@ async function generate(context) {
   if (!dom) return;
 
   const webcomctlPath = path.resolve(binaryDir, "generated-packages/webcomctl-js");
-  const webcomctlEntry = path.join(webcomctlPath, "index.mjs");
 
-  await buildWebcomctlPackage(isDebug, webcomctlPath);
+  await buildPackage("webcomctl-js/builders.config.mjs", isDebug, webcomctlPath);
+  await buildPackage("webcomctl-js/templates.config.mjs", isDebug, webcomctlPath);
+  await buildPackage("webcomctl-js/controls.config.mjs", isDebug, webcomctlPath);
 
-  const webcomctlModule = await import(url.pathToFileURL(webcomctlEntry));
-  const templates = {
-    "webcomctl-js": webcomctlModule.templates,
-  };
+  const buildersEntry = path.join(webcomctlPath, "builders.mjs");
+  const templatesEntry = path.join(webcomctlPath, "templates.mjs");
+  const controlsEntry = path.join(webcomctlPath, "controls.mjs");
 
   const resolveAlias = {
-    "webcomctl-js": webcomctlEntry,
+    "webcomctl-js/builders": buildersEntry,
+    "webcomctl-js/templates": templatesEntry,
+    "webcomctl-js/controls": controlsEntry,
+  };
+
+  const templates = {
+    "webcomctl-js": await import(url.pathToFileURL(templatesEntry)),
   };
 
   for (const [ name, params ] of Object.entries(dom.targets || {})) {
