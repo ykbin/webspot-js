@@ -52,7 +52,7 @@ async function buildJson({script, sourceDir, writeAsset}) {
   }
 }
 
-async function processScript({ from, to, isDebug, workDir, distDir, addAsset, type, staticControlFile }) {
+async function processScript({ from, to, isDebug, workDir, distDir, addAsset, type, staticControlFile, resolveAlias }) {
   const filename = to;
 
   const defaultParams = {
@@ -63,6 +63,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
       modules: [
         path.join(process.cwd(), 'node_modules')
       ],
+      alias: resolveAlias,
     },
     resolveLoader: {
       alias: {
@@ -79,6 +80,9 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
     defaultParams.module.rules.push({
       test: staticControlFile,
       loader: 'uic-static-loader',
+      options: {
+        resolveAlias,
+      },
     });
     index.push(staticControlFile);
   }
