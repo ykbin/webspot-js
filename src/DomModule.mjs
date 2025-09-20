@@ -89,7 +89,7 @@ function getDarkLightFileList(params)
 }
 
 async function buildPackage(configName, isDebug, outputPath) {
-  console.log(`Build ${configName}...`);
+  console.log(`[control.bundle] Generate ${configName}...`);
   const configPath = import.meta.resolve(configName);
 
   const module = await import(configPath);
@@ -118,7 +118,7 @@ async function buildPackage(configName, isDebug, outputPath) {
       err ? reject(err) : resolve(stats);
     });
   });
-  console.log(`Build ${configName}...done`);
+  console.log(`[control.bundle] Generate ${configName}... done`);
 }
 
 async function generate(context) {
@@ -179,6 +179,8 @@ async function generate(context) {
           const workDir = path.dirname(url.fileURLToPath(docUrl));
 
           const docBundleModule = templates[pkg][name];
+          if (!docBundleModule)
+            throw new Error(`Document ${name} not exists in ${pkg}`);
           const HTML = docBundleModule.ROOT_HTML;
           if (typeof HTML !== 'string') {
             console.log('doc module:', docBundleModule);
@@ -311,6 +313,8 @@ async function generate(context) {
           const workDir = path.dirname(ctlFile);
 
           const ctlBundleModule = templates[pkg][name];
+          if (!ctlBundleModule)
+            throw new Error(`Control ${name} not exists in ${pkg}`);
           const HTML = ctlBundleModule.ROOT_HTML;
           if (typeof HTML !== 'string') {
             console.log('ctl module:', ctlBundleModule);
