@@ -368,6 +368,8 @@ async function generate(context) {
         const workDir = path.dirname(ctlFile);
   
         const ctlBundleModule = templates[pkg][name];
+          if (!ctlBundleModule)
+            throw new Error(`Control ${name} not exists in ${pkg}`);
         cssMap[pkg] = cssMap[pkg] || {};
         if (!cssMap[pkg][name]) {
           cssOptionList.push({
