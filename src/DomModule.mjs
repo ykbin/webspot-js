@@ -2,7 +2,6 @@ import path from "node:path";
 import fs from "node:fs";
 import url from 'node:url';
 import jsdom from "jsdom";
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import webpack from 'webpack';
 
 import { copyFileIfDifferent } from './Lib.mjs';
@@ -173,24 +172,24 @@ async function generate(context) {
         if (rootElm.tagName.toLowerCase() === 'webdocument') {
           const pkg = rootElm.getAttribute("pkg");
           const name = rootElm.getAttribute("name");
-          const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
+          const pkgMainUrl = import.meta.resolve(pkg);
           const pkgMainDir = path.dirname(pkgMainUrl);
           const docUrl = path.join(pkgMainDir, 'document', name, 'index.mjs');
           const workDir = path.dirname(url.fileURLToPath(docUrl));
 
-          const docBundleModule = templates[pkg][name];
-          if (!docBundleModule)
+          const ctlBundleModule = templates[pkg][name];
+          if (!ctlBundleModule)
             throw new Error(`Document ${name} not exists in ${pkg}`);
-          const HTML = docBundleModule.ROOT_HTML;
+          const HTML = ctlBundleModule.ROOT_HTML;
           if (typeof HTML !== 'string') {
-            console.log('doc module:', docBundleModule);
+            console.log('doc module:', ctlBundleModule);
             throw `Not exists ROOT_HTML for ${name}`;
           }
 
           const innerHTML = rootElm.innerHTML;
           dom = new JSDOM(HTML);
 
-          let portClass = docBundleModule.PORT_CLASS;
+          let portClass = ctlBundleModule.PORT_CLASS;
           if (portClass) {
             const documentElement = dom.window.document.documentElement;
             const portElm = documentElement.classList.contains(portClass) ? documentElement : documentElement.querySelector(`.${portClass}`);
@@ -207,7 +206,7 @@ async function generate(context) {
             isDebug,
             workDir,
             isInlineSvg: true,
-            content: docBundleModule.CSS,
+            content: ctlBundleModule.CSS,
           });
 
           pkgDefault = pkg;
@@ -298,59 +297,63 @@ async function generate(context) {
           await replaceWebctl(iter);
         }
 
-        if (element.tagName.toLowerCase() === 'webctl') {
+        if (element.tagName.toLowerCase() === "webctl") {
           const pkg = element.getAttribute("pkg") || pkgDefault;
           const name = element.getAttribute("ctl");
           if (!name)
             throw `Cannot find attribute 'ctl' in webctl`;
 
-          const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
-          const pkgMainDir = url.fileURLToPath(path.dirname(pkgMainUrl));
-          let ctlFile = path.join(pkgMainDir, name, 'index.mjs');
-          if (!fs.existsSync(ctlFile)) {
-            ctlFile = path.join(pkgMainDir, 'control', name, 'index.mjs');
-          }
-          const workDir = path.dirname(ctlFile);
-
-          const ctlBundleModule = templates[pkg][name];
-          if (!ctlBundleModule)
-            throw new Error(`Control ${name} not exists in ${pkg}`);
-          const HTML = ctlBundleModule.ROOT_HTML;
-          if (typeof HTML !== 'string') {
-            console.log('ctl module:', ctlBundleModule);
-            throw `Not exists ROOT_HTML for ${name}`;
-          }
-  
-          templateElm.innerHTML = HTML;
-          const controlElm = templateElm.content.firstElementChild;
-          element.id && (controlElm.id = element.id);
-  
-          let portClass = ctlBundleModule.PORT_CLASS;
-          if (portClass) {
-            const portElm = controlElm.classList.contains(portClass) ? controlElm : controlElm.querySelector(`.${portClass}`);
-            if (!portElm) {
-              throw `Cannot find port element with ${portClass} classname of ${name}`
+          let mode = element.getAttribute("mode");
+          mode = mode ? mode.split(",").map(i => i.toLowerCase()) : [ "debug", "release" ];
+          if (mode.includes(isDebug ? "debug" : "release")) {
+            const pkgMainUrl = import.meta.resolve(pkg);
+            const pkgMainDir = url.fileURLToPath(path.dirname(pkgMainUrl));
+            let ctlFile = path.join(pkgMainDir, name, 'index.mjs');
+            if (!fs.existsSync(ctlFile)) {
+              ctlFile = path.join(pkgMainDir, 'control', name, 'index.mjs');
             }
-            while (element.firstChild) {
-              const child = element.removeChild(element.firstChild);
-              portElm.appendChild(child);
+            const workDir = path.dirname(ctlFile);
+
+            const ctlBundleModule = templates[pkg][name];
+            if (!ctlBundleModule)
+              throw new Error(`Control ${name} not exists in ${pkg}`);
+            const HTML = ctlBundleModule.ROOT_HTML;
+            if (typeof HTML !== 'string') {
+              console.log('ctl module:', ctlBundleModule);
+              throw `Not exists ROOT_HTML for ${name}`;
             }
-          }
+    
+            templateElm.innerHTML = HTML;
+            const controlElm = templateElm.content.firstElementChild;
+            element.id && (controlElm.id = element.id);
+    
+            let portClass = ctlBundleModule.PORT_CLASS;
+            if (portClass) {
+              const portElm = controlElm.classList.contains(portClass) ? controlElm : controlElm.querySelector(`.${portClass}`);
+              if (!portElm) {
+                throw `Cannot find port element with ${portClass} classname of ${name}`
+              }
+              while (element.firstChild) {
+                const child = element.removeChild(element.firstChild);
+                portElm.appendChild(child);
+              }
+            }
 
-          element.replaceWith(controlElm);
+            element.replaceWith(controlElm);
 
-          cssMap[pkg] = cssMap[pkg] || {};
-          if (!cssMap[pkg][name]) {
-            cssOptionList.push({
-              from: 'index.css',
-              to: cssFilename,
-              prop: null,
-              isDebug,
-              workDir,
-              isInlineSvg: true,
-              content: ctlBundleModule.CSS,
-            });
-            cssMap[pkg][name] = true;
+            cssMap[pkg] = cssMap[pkg] || {};
+            if (!cssMap[pkg][name]) {
+              cssOptionList.push({
+                from: 'index.css',
+                to: cssFilename,
+                prop: null,
+                isDebug,
+                workDir,
+                isInlineSvg: true,
+                content: ctlBundleModule.CSS,
+              });
+              cssMap[pkg][name] = true;
+            }
           }
         }
       }
@@ -362,7 +365,7 @@ async function generate(context) {
       const module = await import(url.pathToFileURL(staticControlFile));
       const pkg = module.PKG
       for (const name in module.CTLS) {
-        const pkgMainUrl = importMetaResolve(pkg, import.meta.url);
+        const pkgMainUrl = import.meta.resolve(pkg);
         const pkgMainDir = url.fileURLToPath(path.dirname(pkgMainUrl));
         let ctlFile = path.join(pkgMainDir, 'control', name, 'index.mjs');
         const workDir = path.dirname(ctlFile);
