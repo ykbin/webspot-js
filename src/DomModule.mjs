@@ -145,6 +145,10 @@ async function generate(context) {
     "webcomctl-js": await import(url.pathToFileURL(templatesEntry)),
   };
 
+  const controls = {
+    "webcomctl-js": await import(url.pathToFileURL(controlsEntry)),
+  };
+
   for (const [ name, params ] of Object.entries(dom.targets || {})) {
     const parameters = getOptions(params);
     const staticControlFile = parameters.control && parameters.control.basic && path.resolve(sourceDir, parameters.control.basic) || null;
@@ -178,9 +182,17 @@ async function generate(context) {
           const workDir = path.dirname(url.fileURLToPath(docUrl));
 
           const ctlBundleModule = templates[pkg][name];
-          if (!ctlBundleModule)
+          const controlBundle = controls[pkg][name];
+          if (!ctlBundleModule || !controlBundle)
             throw new Error(`Document ${name} not exists in ${pkg}`);
-          const HTML = ctlBundleModule.ROOT_HTML;
+          let HTML;
+          if (controlBundle.createElement) {
+            const element = controlBundle.createElement(dom.window.document);
+            HTML = element.outerHTML;
+          }
+          else {
+            HTML = ctlBundleModule.ROOT_HTML;
+          }
           if (typeof HTML !== 'string') {
             console.log('doc module:', ctlBundleModule);
             throw `Not exists ROOT_HTML for ${name}`;
@@ -315,9 +327,17 @@ async function generate(context) {
             const workDir = path.dirname(ctlFile);
 
             const ctlBundleModule = templates[pkg][name];
-            if (!ctlBundleModule)
+            const controlBundle = controls[pkg][name];
+            if (!ctlBundleModule || !controlBundle)
               throw new Error(`Control ${name} not exists in ${pkg}`);
-            const HTML = ctlBundleModule.ROOT_HTML;
+            let HTML;
+            if (controlBundle.createElement) {
+              const element = controlBundle.createElement(dom.window.document);
+              HTML = element.outerHTML;
+            }
+            else {
+              HTML = ctlBundleModule.ROOT_HTML;
+            }
             if (typeof HTML !== 'string') {
               console.log('ctl module:', ctlBundleModule);
               throw `Not exists ROOT_HTML for ${name}`;
