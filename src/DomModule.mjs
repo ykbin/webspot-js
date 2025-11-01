@@ -120,6 +120,17 @@ async function buildPackage(configName, isDebug, outputPath) {
   console.log(`[control.bundle] Generate ${configName}... done`);
 }
 
+function doctypeToString(doctype) {
+  if (!doctype) return "";
+  let str = `<!DOCTYPE ${doctype.name}`;
+  if (doctype.publicId)
+    str += ` PUBLIC "${doctype.publicId}"`;
+  if (doctype.systemId)
+    str += doctype.publicId ? ` "${doctype.systemId}"` : ` SYSTEM "${doctype.systemId}"`;
+  str += ">";
+  return str;
+}
+
 async function generate(context) {
   const {dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, writeAsset, addAsset, setApplication} = context;
 
@@ -143,6 +154,10 @@ async function generate(context) {
 
   const templates = {
     "webcomctl-js": await import(url.pathToFileURL(templatesEntry)),
+  };
+
+  const controls = {
+    "webcomctl-js": await import(url.pathToFileURL(controlsEntry)),
   };
 
   for (const [ name, params ] of Object.entries(dom.targets || {})) {
@@ -178,9 +193,16 @@ async function generate(context) {
           const workDir = path.dirname(url.fileURLToPath(docUrl));
 
           const ctlBundleModule = templates[pkg][name];
-          if (!ctlBundleModule)
+          const controlBundle = controls[pkg][name];
+          if (!ctlBundleModule || !controlBundle)
             throw new Error(`Document ${name} not exists in ${pkg}`);
-          const HTML = ctlBundleModule.ROOT_HTML;
+          if (!controlBundle.createDocument)
+            throw new Error(`No function createDocument declared in ${pkg}/${name}`);
+          const newDocument = controlBundle.createDocument(dom.window.document);
+          const id = rootElm.getAttribute("id");
+          if (id)
+            newDocument.id = id;
+          const HTML = doctypeToString(newDocument.doctype) + newDocument.documentElement.outerHTML;
           if (typeof HTML !== 'string') {
             console.log('doc module:', ctlBundleModule);
             throw `Not exists ROOT_HTML for ${name}`;
@@ -315,21 +337,24 @@ async function generate(context) {
             const workDir = path.dirname(ctlFile);
 
             const ctlBundleModule = templates[pkg][name];
-            if (!ctlBundleModule)
+            const controlBundle = controls[pkg][name];
+            if (!ctlBundleModule || !controlBundle)
               throw new Error(`Control ${name} not exists in ${pkg}`);
-            const HTML = ctlBundleModule.ROOT_HTML;
+            if (!controlBundle.createElement)
+              throw new Error(`No function createElement declared in ${pkg}/${name}`);
+            const newElement = controlBundle.createElement(dom.window.document);
+            const id = element.getAttribute("id");
+            if (id)
+              newElement.id = id;
+            const HTML = newElement.outerHTML;
             if (typeof HTML !== 'string') {
               console.log('ctl module:', ctlBundleModule);
               throw `Not exists ROOT_HTML for ${name}`;
             }
     
-            templateElm.innerHTML = HTML;
-            const controlElm = templateElm.content.firstElementChild;
-            element.id && (controlElm.id = element.id);
-    
             let portClass = ctlBundleModule.PORT_CLASS;
             if (portClass) {
-              const portElm = controlElm.classList.contains(portClass) ? controlElm : controlElm.querySelector(`.${portClass}`);
+              const portElm = newElement.classList.contains(portClass) ? newElement : newElement.querySelector(`.${portClass}`);
               if (!portElm) {
                 throw `Cannot find port element with ${portClass} classname of ${name}`
               }
@@ -339,7 +364,7 @@ async function generate(context) {
               }
             }
 
-            element.replaceWith(controlElm);
+            element.replaceWith(newElement);
 
             cssMap[pkg] = cssMap[pkg] || {};
             if (!cssMap[pkg][name]) {
