@@ -120,6 +120,17 @@ async function buildPackage(configName, isDebug, outputPath) {
   console.log(`[control.bundle] Generate ${configName}... done`);
 }
 
+function doctypeToString(doctype) {
+  if (!doctype) return "";
+  let str = `<!DOCTYPE ${doctype.name}`;
+  if (doctype.publicId)
+    str += ` PUBLIC "${doctype.publicId}"`;
+  if (doctype.systemId)
+    str += doctype.publicId ? ` "${doctype.systemId}"` : ` SYSTEM "${doctype.systemId}"`;
+  str += ">";
+  return str;
+}
+
 async function generate(context) {
   const {dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, writeAsset, addAsset, setApplication} = context;
 
@@ -186,9 +197,13 @@ async function generate(context) {
           if (!ctlBundleModule || !controlBundle)
             throw new Error(`Document ${name} not exists in ${pkg}`);
           let HTML;
-          if (controlBundle.createElement) {
-            const element = controlBundle.createElement(dom.window.document);
-            HTML = element.outerHTML;
+          if (controlBundle.createDocument) {
+            const newDocument = controlBundle.createDocument(dom.window.document);
+            const id = rootElm.getAttribute("id");
+            if (id) {
+              newDocument.id = id;
+            }
+            HTML = doctypeToString(newDocument.doctype) + newDocument.documentElement.outerHTML;
           }
           else {
             HTML = ctlBundleModule.ROOT_HTML;
@@ -332,8 +347,12 @@ async function generate(context) {
               throw new Error(`Control ${name} not exists in ${pkg}`);
             let HTML;
             if (controlBundle.createElement) {
-              const element = controlBundle.createElement(dom.window.document);
-              HTML = element.outerHTML;
+              const newElement = controlBundle.createElement(dom.window.document);
+              const id = element.getAttribute("id");
+              if (id) {
+                newElement.id = id;
+              }
+              HTML = newElement.outerHTML;
             }
             else {
               HTML = ctlBundleModule.ROOT_HTML;
