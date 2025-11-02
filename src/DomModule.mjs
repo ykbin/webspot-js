@@ -57,6 +57,12 @@ async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
       params.style = Object.assign({}, globalStyle, localStyle);
     }
 
+    if (params.bootScript || (dom.options && dom.options.bootScript)) {
+      const globalScript = (dom.options && dom.options.bootScript) ? ((typeof dom.options.bootScript === 'string') ? { entry: dom.options.bootScript } : (dom.options.bootScript || {})) : {};
+      const localScript = (typeof params.bootScript === 'string') ? { entry: params.bootScript } : (params.bootScript || {});
+      params.bootScript = Object.assign({}, globalScript, localScript);
+    }
+
     if (params.script || (dom.options && dom.options.script)) {
       const globalScript = (dom.options && dom.options.script) ? ((typeof dom.options.script === 'string') ? { entry: dom.options.script } : (dom.options.script || {})) : {};
       const localScript = (typeof params.script === 'string') ? { entry: params.script } : (params.script || {});
@@ -163,13 +169,14 @@ async function generate(context) {
   for (const [ name, params ] of Object.entries(dom.targets || {})) {
     const parameters = getOptions(params);
     const staticControlFile = parameters.control && parameters.control.basic && path.resolve(sourceDir, parameters.control.basic) || null;
-    const { entry, alias, title, description, hasMeta, output, style, script } = parameters;
+    const { entry, alias, title, description, hasMeta, output, style, script, bootScript } = parameters;
     const inFilename = path.resolve(sourceDir, entry);
 
     const cssFilename = `${name}.bundle.css`;
     const cssOptionList = [];
 
-    const jsFilename = `${name}.bundle.js`;
+    const jsBootFilename = `${name}.boot.js`;
+    const jsBundleFilename = `${name}.bundle.js`;
 
     let fileContent = fs.readFileSync(inFilename, 'utf8').toString();
     fileContent = fileContent.replace(/^\uFEFF/, '');
@@ -237,6 +244,21 @@ async function generate(context) {
     }
 
     const document = dom.window.document;
+    // boot
+    let bootScriptString = null;
+    if (bootScript) {
+      await scriptModule.processScript({
+        from: bootScript.entry,
+        to: jsBootFilename,
+        isDebug: false,
+        workDir: sourceDir,
+        distDir,
+        addAsset: null,
+        staticControlFile: null,
+        resolveAlias,
+      });
+      bootScriptString = await fs.promises.readFile(path.resolve(distDir, jsBootFilename), "utf8");
+    }
     // head
     const headFrg = document.createDocumentFragment();
     {
@@ -291,6 +313,13 @@ async function generate(context) {
       addShortcutLink(params.shortcut.light, 'light');
       addShortcutLink(params.shortcut.dark, 'dark');
 
+      if (bootScriptString) {
+        const scriptElm = document.createElement('script');
+        scriptElm.setAttribute("type", "text/javascript");
+        scriptElm.textContent = bootScriptString;
+        headFrg.appendChild(scriptElm);
+      }
+
       if (style) {
         cssOptionList.push({
           from: style.entry,
@@ -305,7 +334,7 @@ async function generate(context) {
       if (script) {
         const scriptElm = document.createElement('script');
         scriptElm.setAttribute("defer", "defer");
-        scriptElm.setAttribute("src", path.posix.join(baseUrl, jsFilename));
+        scriptElm.setAttribute("src", path.posix.join(baseUrl, jsBundleFilename));
         headFrg.appendChild(scriptElm);
       }
     }
@@ -428,7 +457,7 @@ async function generate(context) {
     if (script) {
       await scriptModule.processScript({
         from: script.entry,
-        to: jsFilename,
+        to: jsBundleFilename,
         isDebug,
         workDir: sourceDir,
         distDir,
@@ -439,7 +468,7 @@ async function generate(context) {
     }
 
     if (cssResult.length) {
-      const linkElm = document.createElement('link');
+      const linkElm = document.createElement("link");
       linkElm.setAttribute("rel", "stylesheet");
       linkElm.setAttribute("type", "text/css");
       linkElm.setAttribute("href", path.posix.join(baseUrl, cssFilename));
