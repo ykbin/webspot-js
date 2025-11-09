@@ -388,6 +388,9 @@ async function generate(context) {
             if (!controlBundle.createElement)
               throw new Error(`No function createElement declared in ${pkg}/${name}`);
             const newElement = controlBundle.createElement(dom.window.document, await getControlParams(element));
+            if (!newElement) {
+              throw new Error(`HTML is broken for ${pkg}/${name}`);
+            }
             const id = element.getAttribute("id");
             if (id)
               newElement.id = id;
