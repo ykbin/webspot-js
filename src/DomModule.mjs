@@ -137,6 +137,21 @@ function doctypeToString(doctype) {
   return str;
 }
 
+async function getControlParams(element) {
+  const result = {};
+  const params = element.getAttribute("params") || "";
+  for (const iter of params.split(";")) {
+    if (!iter) continue;
+    const index = iter.indexOf(":");
+    const key = (index !== -1) ? iter.substring(0, index) : iter;
+    const val = (index !== -1) ? iter.substring(index + 1) : "";
+    const camelKey = key.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+    result[camelKey.trim()] = val.trim();
+  }
+
+  return result;
+}
+
 async function generate(context) {
   const {dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, writeAsset, addAsset, setApplication} = context;
 
@@ -205,7 +220,7 @@ async function generate(context) {
             throw new Error(`Document ${name} not exists in ${pkg}`);
           if (!controlBundle.createDocument)
             throw new Error(`No function createDocument declared in ${pkg}/${name}`);
-          const newDocument = controlBundle.createDocument(dom.window.document);
+          const newDocument = controlBundle.createDocument(dom.window.document, await getControlParams(rootElm));
           const id = rootElm.getAttribute("id");
           if (id)
             newDocument.id = id;
@@ -350,6 +365,7 @@ async function generate(context) {
 
         if (element.tagName.toLowerCase() === "webctl") {
           const pkg = element.getAttribute("pkg") || pkgDefault;
+          cssMap[pkg] = cssMap[pkg] || {};
           const name = element.getAttribute("ctl");
           if (!name)
             throw `Cannot find attribute 'ctl' in webctl`;
@@ -371,7 +387,7 @@ async function generate(context) {
               throw new Error(`Control ${name} not exists in ${pkg}`);
             if (!controlBundle.createElement)
               throw new Error(`No function createElement declared in ${pkg}/${name}`);
-            const newElement = controlBundle.createElement(dom.window.document);
+            const newElement = controlBundle.createElement(dom.window.document, await getControlParams(element));
             const id = element.getAttribute("id");
             if (id)
               newElement.id = id;
@@ -395,19 +411,33 @@ async function generate(context) {
 
             element.replaceWith(newElement);
 
-            cssMap[pkg] = cssMap[pkg] || {};
             if (!cssMap[pkg][name]) {
-              cssOptionList.push({
-                from: 'index.css',
-                to: cssFilename,
-                prop: null,
-                isDebug,
-                workDir,
-                isInlineSvg: true,
-                content: ctlBundleModule.CSS,
-              });
+              let cssText = ctlBundleModule.CSS;
+              const controlBundle = controls[pkg][name];
+              if (controlBundle.initRules) {
+                const styleSheet = new dom.window.CSSStyleSheet;
+                controlBundle.initRules(styleSheet);
+                for (const rule of styleSheet.cssRules) {
+                  cssText = cssText ? cssText + "\n" + rule.cssText : rule.cssText;
+                }
+              }
+              if (cssText) {
+                cssOptionList.push({
+                  from: 'index.css',
+                  to: cssFilename,
+                  prop: null,
+                  isDebug,
+                  workDir,
+                  isInlineSvg: true,
+                  content: cssText,
+                });
+              }
               cssMap[pkg][name] = true;
             }
+
+          }
+          else {
+            element.remove();
           }
         }
       }
@@ -418,6 +448,7 @@ async function generate(context) {
     if (staticControlFile) {
       const module = await import(url.pathToFileURL(staticControlFile));
       const pkg = module.PKG
+      cssMap[pkg] = cssMap[pkg] || {};
       for (const name in module.CTLS) {
         const pkgMainUrl = import.meta.resolve(pkg);
         const pkgMainDir = url.fileURLToPath(path.dirname(pkgMainUrl));
@@ -427,19 +458,31 @@ async function generate(context) {
         const ctlBundleModule = templates[pkg][name];
           if (!ctlBundleModule)
             throw new Error(`Control ${name} not exists in ${pkg}`);
-        cssMap[pkg] = cssMap[pkg] || {};
+          
         if (!cssMap[pkg][name]) {
-          cssOptionList.push({
-            from: 'index.css',
-            to: cssFilename,
-            prop: null,
-            isDebug,
-            workDir,
-            isInlineSvg: true,
-            content: ctlBundleModule.CSS,
-          });
+            let cssText = ctlBundleModule.CSS;
+            const controlBundle = controls[pkg][name];
+            if (controlBundle.initRules) {
+              const styleSheet = new dom.window.CSSStyleSheet;
+              controlBundle.initRules(styleSheet);
+              for (const rule of styleSheet.cssRules) {
+                cssText = cssText ? cssText + "\n" + rule.cssText : rule.cssText;
+              }
+            }
+          if (cssText) {
+            cssOptionList.push({
+              from: 'index.css',
+              to: cssFilename,
+              prop: null,
+              isDebug,
+              workDir,
+              isInlineSvg: true,
+              content: cssText,
+            });
+          }
           cssMap[pkg][name] = true;
         }
+
       }
     }
 
