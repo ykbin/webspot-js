@@ -455,12 +455,9 @@ async function generate(context) {
         let ctlFile = path.join(pkgMainDir, 'control', name, 'index.mjs');
         const workDir = path.dirname(ctlFile);
   
-        const ctlBundleModule = templates[pkg][name];
-          if (!ctlBundleModule)
-            throw new Error(`Control ${name} not exists in ${pkg}`);
-          
         if (!cssMap[pkg][name]) {
-            let cssText = ctlBundleModule.CSS;
+            const ctlBundleModule = templates[pkg][name];
+            let cssText = ctlBundleModule?.CSS;
             const controlBundle = controls[pkg][name];
             if (controlBundle.initRules) {
               const styleSheet = new dom.window.CSSStyleSheet;
