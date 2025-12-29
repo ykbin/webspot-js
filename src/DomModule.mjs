@@ -383,7 +383,7 @@ async function generate(context) {
 
             const ctlBundleModule = templates[pkg][name];
             const controlBundle = controls[pkg][name];
-            if (!ctlBundleModule || !controlBundle)
+            if (!ctlBundleModule && !controlBundle)
               throw new Error(`Control ${name} not exists in ${pkg}`);
             if (!controlBundle.createElement)
               throw new Error(`No function createElement declared in ${pkg}/${name}`);
@@ -394,13 +394,10 @@ async function generate(context) {
             const id = element.getAttribute("id");
             if (id)
               newElement.id = id;
-            const HTML = newElement.outerHTML;
-            if (typeof HTML !== 'string') {
-              console.log('ctl module:', ctlBundleModule);
-              throw `Not exists ROOT_HTML for ${name}`;
-            }
-    
-            let portClass = ctlBundleModule.PORT_CLASS;
+
+            let portClass = controlBundle.classList?.PORT_CLASS;
+            if (!portClass)
+              portClass = ctlBundleModule?.PORT_CLASS;
             if (portClass) {
               const portElm = newElement.classList.contains(portClass) ? newElement : newElement.querySelector(`.${portClass}`);
               if (!portElm) {
@@ -415,7 +412,7 @@ async function generate(context) {
             element.replaceWith(newElement);
 
             if (!cssMap[pkg][name]) {
-              let cssText = ctlBundleModule.CSS;
+              let cssText = ctlBundleModule?.CSS;
               const controlBundle = controls[pkg][name];
               if (controlBundle.initRules) {
                 const styleSheet = new dom.window.CSSStyleSheet;
