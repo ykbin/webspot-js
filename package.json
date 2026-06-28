@@ -4,7 +4,7 @@
   "description": "",
   "main": "src/index.mjs",
   "bin": {
-    "webspot": "dest/cli.js"
+    "webspot": "src/cli.mjs"
   },
   "repository": {
     "type": "git",
