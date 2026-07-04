@@ -70,6 +70,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
         'cmake-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/cmake-loader")),
         'module-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/module-loader")),
         'uic-static-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/uic-static-loader")),
+        'uic-static-loader2': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/uic-static-loader2")),
         // 'uictmplt-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/uictmplt-loader")),
         'template-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/template-loader")),
         'uictmplt-loader': `template-loader?templates=${url.pathToFileURL(resolveAlias["webcomctl-js/templates"])}`,
@@ -81,9 +82,9 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
   if (staticControlFile) {
     defaultParams.module.rules.push({
       test: staticControlFile,
-      loader: 'uic-static-loader',
+      loader: 'uic-static-loader2',
       options: {
-        "webcomctl-js": url.pathToFileURL(resolveAlias["webcomctl-js/templates"]),
+        // "webcomctl-js": url.pathToFileURL(resolveAlias["webcomctl-js/templates"]),
       },
     });
     index.push(staticControlFile);

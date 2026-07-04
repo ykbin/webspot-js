@@ -30,3 +30,12 @@ export function getFilenamesFromParams(params) {
 
   return result;
 }
+
+export async function fileExists(path) {
+  try {
+    const stat = await fs.promises.stat(path);
+    if (stat.isFile())
+      return true;
+  } catch { }
+  return false;
+}

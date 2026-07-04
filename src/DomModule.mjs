@@ -4,7 +4,7 @@ import url from 'node:url';
 import jsdom from "jsdom";
 import webpack from 'webpack';
 
-import { copyFileIfDifferent } from './Lib.mjs';
+import { copyFileIfDifferent, fileExists } from './Lib.mjs';
 import styleModule from './StyleModule.mjs';
 import scriptModule from './ScriptModule.mjs';
 
@@ -152,11 +152,27 @@ async function getControlParams(element) {
   return result;
 }
 
+async function webpackBuild(config) {
+  const compiler = webpack(config);
+
+  const stats = await new Promise((resolve, reject) => {
+    compiler.run((err, stats) => {
+      if (err) reject(err);
+      else if (stats.hasErrors()) reject(new Error(stats.toString()));
+      else resolve(stats);
+    });
+  });
+
+  await new Promise((resolve) => compiler.close(resolve));
+  return stats;
+}
+
 async function generate(context) {
   const {dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, writeAsset, addAsset, setApplication} = context;
 
   if (!dom) return;
 
+/*
   const webcomctlPath = path.resolve(binaryDir, "generated-packages/webcomctl-js");
 
   await buildPackage("webcomctl-js/builders.config.mjs", isDebug, webcomctlPath);
@@ -177,8 +193,84 @@ async function generate(context) {
     "webcomctl-js": await import(url.pathToFileURL(templatesEntry)),
   };
 
+  const lookupTemplate = (pkg, name) => {
+    return templates[pkg][name];
+  };
+
   const controls = {
     "webcomctl-js": await import(url.pathToFileURL(controlsEntry)),
+  };
+
+  const documents = controls;
+
+  const lookupControl = async (pkg, name) => {
+    return controls[pkg][name];
+  };
+
+  const lookupDocument = async (pkg, name) => {
+    return documents[pkg][name];
+  };
+*/
+  const resolveAlias = {
+    "webcomctl-js/builders": "<null>",
+    "webcomctl-js/templates": "<null>",
+    "webcomctl-js/controls": "<null>",
+  };
+
+  const lookupTemplate = (pkg, name) => {
+    return undefined;
+  };
+
+  const lookupObjectImpl = async (pkg, name, type, cache) => {
+    let pkgObj = cache[pkg];
+    if (!pkgObj)
+      cache[pkg] = pkgObj = {};
+
+    let docObj = pkgObj[name];
+    if (docObj)
+      return docObj;
+
+    const modulePath = type === "document" ? `${pkg}/doc/${name}` : `${pkg}/ctl/${name}`;
+    const docUrl = import.meta.resolve(modulePath);
+    if (!await fileExists(url.fileURLToPath(docUrl))) {
+      const pkgDir = path.join(binaryDir, "node_modules", pkg);
+      const configUrl = url.pathToFileURL(path.join(pkgDir, "webpack.config.mjs"));
+      const configModule = await import(configUrl);
+
+      const argv = { env: {} };
+      if (isDebug) {
+        process.env.WEBMAKE_BUILD_TYPE = 'Debug';
+        argv.mode = "development";
+      }
+
+      if (type === "document")
+        argv.config_document = name;
+      if (type === "control")
+        argv.config_control = name;
+
+      const config = await configModule.default(argv.env, argv);
+      config.output.clean = false;
+      const stats = await webpackBuild(config);
+      console.log("--------------------------------------------------------------------------------");
+      console.log(`[${type}] build`, path.relative(pkgDir, config.entry));
+      console.log(stats.toString({ colors: true }));
+    }
+
+    const module = await import(modulePath);
+    if (!module[name])
+      throw new Error(`Export ${name} not exists in ${modulePath}`);
+    pkgObj[name] = docObj = module[name];
+    return docObj;
+  };
+
+  const documents = {};
+  const lookupDocument = async (pkg, name) => {
+    return lookupObjectImpl(pkg, name, "document", documents);
+  };
+
+  const controls = {};
+  const lookupControl = async (pkg, name) => {
+    return lookupObjectImpl(pkg, name, "control", controls);
   };
 
   for (const [ name, params ] of Object.entries(dom.targets || {})) {
@@ -210,13 +302,13 @@ async function generate(context) {
           const pkg = rootElm.getAttribute("pkg");
           const name = rootElm.getAttribute("name");
           const pkgMainUrl = import.meta.resolve(pkg);
-          const pkgMainDir = path.dirname(pkgMainUrl);
-          const docUrl = path.join(pkgMainDir, 'document', name, 'index.mjs');
+          const pkgMainDir = path.posix.dirname(pkgMainUrl);
+          const docUrl = path.posix.join(pkgMainDir, 'document', name, 'index.mjs');
           const workDir = path.dirname(url.fileURLToPath(docUrl));
 
-          const ctlBundleModule = templates[pkg][name];
-          const controlBundle = controls[pkg][name];
-          if (!ctlBundleModule || !controlBundle)
+          const ctlBundleModule = lookupTemplate(pkg, name);
+          const controlBundle = await lookupDocument(pkg, name);
+          if (!ctlBundleModule && !controlBundle)
             throw new Error(`Document ${name} not exists in ${pkg}`);
           if (!controlBundle.createDocument)
             throw new Error(`No function createDocument declared in ${pkg}/${name}`);
@@ -233,7 +325,7 @@ async function generate(context) {
           const innerHTML = rootElm.innerHTML;
           dom = new JSDOM(HTML);
 
-          let portClass = ctlBundleModule.PORT_CLASS;
+          const portClass = controlBundle?.classList?.PORT_CLASS || ctlBundleModule?.PORT_CLASS;
           if (portClass) {
             const documentElement = dom.window.document.documentElement;
             const portElm = documentElement.classList.contains(portClass) ? documentElement : documentElement.querySelector(`.${portClass}`);
@@ -243,15 +335,25 @@ async function generate(context) {
             portElm.innerHTML = innerHTML;
           }
 
-          cssOptionList.push({
-            from: 'index.css',
-            to: cssFilename,
-            prop: null,
-            isDebug,
-            workDir,
-            isInlineSvg: true,
-            content: ctlBundleModule.CSS,
-          });
+          let cssText = ctlBundleModule?.CSS;
+          if (controlBundle?.initRules) {
+            const styleSheet = new dom.window.CSSStyleSheet;
+            controlBundle.initRules(styleSheet);
+            for (const rule of styleSheet.cssRules) {
+              cssText = cssText ? cssText + "\n" + rule.cssText : rule.cssText;
+            }
+          }
+          if (cssText) {
+            cssOptionList.push({
+              from: 'index.css',
+              to: cssFilename,
+              prop: null,
+              isDebug,
+              workDir,
+              isInlineSvg: true,
+              content: cssText,
+            });
+          }
 
           pkgDefault = pkg;
         }
@@ -374,15 +476,15 @@ async function generate(context) {
           mode = mode ? mode.split(",").map(i => i.toLowerCase()) : [ "debug", "release" ];
           if (mode.includes(isDebug ? "debug" : "release")) {
             const pkgMainUrl = import.meta.resolve(pkg);
-            const pkgMainDir = url.fileURLToPath(path.dirname(pkgMainUrl));
+            const pkgMainDir = url.fileURLToPath(path.posix.dirname(pkgMainUrl));
             let ctlFile = path.join(pkgMainDir, name, 'index.mjs');
             if (!fs.existsSync(ctlFile)) {
               ctlFile = path.join(pkgMainDir, 'control', name, 'index.mjs');
             }
             const workDir = path.dirname(ctlFile);
 
-            const ctlBundleModule = templates[pkg][name];
-            const controlBundle = controls[pkg][name];
+            const ctlBundleModule = lookupTemplate(pkg, name);
+            const controlBundle = await lookupControl(pkg, name);
             if (!ctlBundleModule && !controlBundle)
               throw new Error(`Control ${name} not exists in ${pkg}`);
             if (!controlBundle.createElement)
@@ -395,9 +497,7 @@ async function generate(context) {
             if (id)
               newElement.id = id;
 
-            let portClass = controlBundle.classList?.PORT_CLASS;
-            if (!portClass)
-              portClass = ctlBundleModule?.PORT_CLASS;
+            let portClass = controlBundle?.classList?.PORT_CLASS || ctlBundleModule?.PORT_CLASS;
             if (portClass) {
               const portElm = newElement.classList.contains(portClass) ? newElement : newElement.querySelector(`.${portClass}`);
               if (!portElm) {
@@ -413,7 +513,7 @@ async function generate(context) {
 
             if (!cssMap[pkg][name]) {
               let cssText = ctlBundleModule?.CSS;
-              const controlBundle = controls[pkg][name];
+              const controlBundle = await lookupControl(pkg, name);
               if (controlBundle.initRules) {
                 const styleSheet = new dom.window.CSSStyleSheet;
                 controlBundle.initRules(styleSheet);
@@ -451,14 +551,14 @@ async function generate(context) {
       cssMap[pkg] = cssMap[pkg] || {};
       for (const name in module.CTLS) {
         const pkgMainUrl = import.meta.resolve(pkg);
-        const pkgMainDir = url.fileURLToPath(path.dirname(pkgMainUrl));
+        const pkgMainDir = url.fileURLToPath(path.posix.dirname(pkgMainUrl));
         let ctlFile = path.join(pkgMainDir, 'control', name, 'index.mjs');
         const workDir = path.dirname(ctlFile);
   
         if (!cssMap[pkg][name]) {
-            const ctlBundleModule = templates[pkg][name];
+            const ctlBundleModule = lookupTemplate(pkg, name);
             let cssText = ctlBundleModule?.CSS;
-            const controlBundle = controls[pkg][name];
+            const controlBundle = await lookupControl(pkg, name);
             if (controlBundle.initRules) {
               const styleSheet = new dom.window.CSSStyleSheet;
               controlBundle.initRules(styleSheet);
