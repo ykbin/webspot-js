@@ -172,51 +172,6 @@ async function generate(context) {
 
   if (!dom) return;
 
-/*
-  const webcomctlPath = path.resolve(binaryDir, "generated-packages/webcomctl-js");
-
-  await buildPackage("webcomctl-js/builders.config.mjs", isDebug, webcomctlPath);
-  await buildPackage("webcomctl-js/templates.config.mjs", isDebug, webcomctlPath);
-  await buildPackage("webcomctl-js/controls.config.mjs", isDebug, webcomctlPath);
-
-  const buildersEntry = path.join(webcomctlPath, "builders.mjs");
-  const templatesEntry = path.join(webcomctlPath, "templates.mjs");
-  const controlsEntry = path.join(webcomctlPath, "controls.mjs");
-
-  const resolveAlias = {
-    "webcomctl-js/builders": buildersEntry,
-    "webcomctl-js/templates": templatesEntry,
-    "webcomctl-js/controls": controlsEntry,
-  };
-
-  const templates = {
-    "webcomctl-js": await import(url.pathToFileURL(templatesEntry)),
-  };
-
-  const lookupTemplate = (pkg, name) => {
-    return templates[pkg][name];
-  };
-
-  const controls = {
-    "webcomctl-js": await import(url.pathToFileURL(controlsEntry)),
-  };
-
-  const documents = controls;
-
-  const lookupControl = async (pkg, name) => {
-    return controls[pkg][name];
-  };
-
-  const lookupDocument = async (pkg, name) => {
-    return documents[pkg][name];
-  };
-*/
-  const resolveAlias = {
-    "webcomctl-js/builders": "<null>",
-    "webcomctl-js/templates": "<null>",
-    "webcomctl-js/controls": "<null>",
-  };
-
   const lookupTemplate = (pkg, name) => {
     return undefined;
   };
@@ -230,23 +185,18 @@ async function generate(context) {
     if (docObj)
       return docObj;
 
-    const modulePath = type === "document" ? `${pkg}/doc/${name}` : `${pkg}/ctl/${name}`;
+    const modulePath = `${pkg}/${type}/${name}`;
     const docUrl = import.meta.resolve(modulePath);
     if (!await fileExists(url.fileURLToPath(docUrl))) {
       const pkgDir = path.join(binaryDir, "node_modules", pkg);
       const configUrl = url.pathToFileURL(path.join(pkgDir, "webpack.config.mjs"));
       const configModule = await import(configUrl);
 
-      const argv = { env: {} };
+      const argv = { env: {}, [ `config_${type}` ]: name };
       if (isDebug) {
         process.env.WEBMAKE_BUILD_TYPE = 'Debug';
         argv.mode = "development";
       }
-
-      if (type === "document")
-        argv.config_document = name;
-      if (type === "control")
-        argv.config_control = name;
 
       const config = await configModule.default(argv.env, argv);
       config.output.clean = false;
@@ -372,7 +322,6 @@ async function generate(context) {
         distDir,
         addAsset: null,
         staticControlFile: null,
-        resolveAlias,
       });
       bootScriptString = await fs.promises.readFile(path.resolve(distDir, jsBootFilename), "utf8");
     }
@@ -603,7 +552,6 @@ async function generate(context) {
         distDir,
         addAsset,
         staticControlFile,
-        resolveAlias,
       });
     }
 
