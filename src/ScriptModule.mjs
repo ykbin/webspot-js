@@ -63,16 +63,12 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
       modules: [
         path.join(process.cwd(), 'node_modules')
       ],
-      alias: resolveAlias,
     },
     resolveLoader: {
       alias: {
         'cmake-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/cmake-loader")),
         'module-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/module-loader")),
         'uic-static-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/uic-static-loader")),
-        // 'uictmplt-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/uictmplt-loader")),
-        'template-loader': url.fileURLToPath(import.meta.resolve("webcomctl-js/loader/template-loader")),
-        'uictmplt-loader': `template-loader?templates=${url.pathToFileURL(resolveAlias["webcomctl-js/templates"])}`,
       },
     },
   };
@@ -82,9 +78,6 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
     defaultParams.module.rules.push({
       test: staticControlFile,
       loader: 'uic-static-loader',
-      options: {
-        "webcomctl-js": url.pathToFileURL(resolveAlias["webcomctl-js/templates"]),
-      },
     });
     index.push(staticControlFile);
   }
