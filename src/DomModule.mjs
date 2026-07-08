@@ -188,9 +188,7 @@ async function generate(context) {
     const modulePath = `${pkg}/${type}/${name}`;
     const docUrl = import.meta.resolve(modulePath);
     if (!await fileExists(url.fileURLToPath(docUrl))) {
-      const pkgDir = path.join(binaryDir, "node_modules", pkg);
-      const configUrl = url.pathToFileURL(path.join(pkgDir, "webpack.config.mjs"));
-      const configModule = await import(configUrl);
+      const configModule = await import(`${pkg}/webpack.config.mjs`);
 
       const argv = { env: {}, [ `config_${type}` ]: name };
       if (isDebug) {
@@ -202,7 +200,7 @@ async function generate(context) {
       config.output.clean = false;
       const stats = await webpackBuild(config);
       console.log("--------------------------------------------------------------------------------");
-      console.log(`[${type}] build`, path.relative(pkgDir, config.entry));
+      console.log(`[${type}] build ${modulePath}`);
       console.log(stats.toString({ colors: true }));
     }
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-import path from "path";
-import { fileURLToPath, pathToFileURL } from 'url';
+import path from "node:path";
+import url from "node:url";
 import webspot from './index.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
+const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const converArgName = (key) => {
@@ -50,13 +50,13 @@ const makeAgrsMap = (args, defaultArgMap) => {
 const [,, ...args] = process.argv;
 const argm = makeAgrsMap(args, {
   buildType: "Release",
-  sourceDir: process.cwd,
-  binaryDir: process.cwd,
+  sourceDir: process.cwd(),
+  binaryDir: process.cwd(),
 });
 
 (async () => {
   process.env.WEBMAKE_BUILD_TYPE = argm.buildType;
-  const configUrl = pathToFileURL(path.resolve(argm.sourceDir, "project.config.mjs"));
+  const configUrl = url.pathToFileURL(path.resolve(argm.sourceDir, "project.config.mjs"));
   const { default: projectConfig } = await import(configUrl);
   const config = Object.assign(projectConfig, argm);
   webspot.build(config);
