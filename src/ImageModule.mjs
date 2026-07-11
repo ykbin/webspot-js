@@ -1,7 +1,7 @@
 import path from "node:path";
 import { copyFileIfDifferent, getFilenamesFromParams } from './Lib.mjs';
 
-async function configure({image, sourceDir, distDir, addAsset}) {
+async function configure({image, sourceDir, binaryDir, addAsset}) {
   const list = [];
   for (const name of (image ? ['icon', 'logo', 'list'] : []))
     list.push(...getFilenamesFromParams(image[name]));
@@ -9,7 +9,7 @@ async function configure({image, sourceDir, distDir, addAsset}) {
     const inDirname = path.resolve(sourceDir, 'img');
     const inFilename = path.resolve(sourceDir, iter);
     const filename = path.relative(inDirname, inFilename);
-    const outFilename = path.resolve(distDir, filename);
+    const outFilename = path.resolve(binaryDir, filename);
     addAsset(filename);
     if (await copyFileIfDifferent(inFilename, outFilename)) {
       console.log(`[image.configure] Copy ${iter}`);

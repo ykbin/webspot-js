@@ -36,8 +36,6 @@ function isEqualValue(a, b) {
 }
 
 async function preConfigure(config) {
-  const distDir = path.join(config.binaryDir, "dist");
-  config.distDir = distDir;
   config.isDebug = (config.buildType === "Debug");
 
   const assets = {
@@ -70,13 +68,13 @@ async function preConfigure(config) {
       addAssetItem({ path: pathStr });
     }
 
-    const filename = path.resolve(distDir, src);
+    const filename = path.resolve(config.binaryDir, src);
     await fs.promises.writeFile(filename, content, { encoding: 'utf8', flag: 'w' });
   };
 
   config.flushAsset = async () => {
     const content = JSON.stringify(assets);
-    await fs.promises.writeFile(path.resolve(distDir, 'WebAssetConfig.json'), content, { encoding: 'utf8', flag: 'w' });
+    await fs.promises.writeFile(path.resolve(config.binaryDir, 'WebAssetConfig.json'), content, { encoding: 'utf8', flag: 'w' });
     console.log(`[asset.json] Generate WebAssetConfig.json`);
   };
 
@@ -84,12 +82,12 @@ async function preConfigure(config) {
     assets.application = application;
   };
   
-  if (fs.existsSync(distDir))
-    fs.rmSync(distDir, {recursive: true});
-  fs.mkdirSync(distDir);
+  if (fs.existsSync(config.binaryDir))
+    fs.rmSync(config.binaryDir, {recursive: true});
+  fs.mkdirSync(config.binaryDir);
 }
 
-async function preGenerate({distDir}) {
+async function preGenerate({binaryDir}) {
 }
 
 export default {

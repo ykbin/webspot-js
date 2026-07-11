@@ -6,7 +6,7 @@ import { copyFileIfDifferent } from './Lib.mjs';
 const FILE_SCHEME = "file://";
 const IMPORT_SCHEME = "import://";
 
-async function configure({resource, sourceDir, distDir, addAsset}) {
+async function configure({resource, sourceDir, binaryDir, addAsset}) {
   if (!resource)
     return;
 
@@ -50,8 +50,8 @@ async function configure({resource, sourceDir, distDir, addAsset}) {
       output = path.join(output, rfile);
     }
 
-    output = path.resolve(distDir, output);
-    rfile = path.relative(distDir, output);
+    output = path.resolve(binaryDir, output);
+    rfile = path.relative(binaryDir, output);
 
     addAsset(rfile);
   
