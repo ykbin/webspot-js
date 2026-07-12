@@ -52,7 +52,7 @@ async function buildJson({script, sourceDir, writeAsset}) {
   }
 }
 
-async function processScript({ from, to, isDebug, workDir, distDir, addAsset, type, staticControlFile, resolveAlias }) {
+async function processScript({ from, to, isDebug, workDir, binaryDir, addAsset, type, staticControlFile, resolveAlias }) {
   const filename = to;
 
   const defaultParams = {
@@ -89,7 +89,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
     devtool: 'source-map',
     output: {
       sourceMapFilename: `${filename}.map`,
-      path: distDir,
+      path: binaryDir,
       filename,
     },
   };
@@ -98,7 +98,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
     ...defaultParams,
     mode: 'production',
     output: {
-      path: distDir,
+      path: binaryDir,
       filename,
     },
   };
@@ -140,7 +140,7 @@ async function processScript({ from, to, isDebug, workDir, distDir, addAsset, ty
   console.log(`[script.bundle] Generate ${filename}`);
 }
 
-async function buildBundle({ script, isDebug, sourceDir, distDir, addAsset }) {
+async function buildBundle({ script, isDebug, sourceDir, binaryDir, addAsset }) {
   if (script) {
     for (const [ entry, from ] of Object.entries(script.entry || {})) {
       const to = `${entry}.bundle.js`;
@@ -149,7 +149,7 @@ async function buildBundle({ script, isDebug, sourceDir, distDir, addAsset }) {
         to,
         isDebug,
         workDir: sourceDir,
-        distDir,
+        binaryDir,
         addAsset
       });
     }

@@ -17,7 +17,7 @@ function getOptions(params) {
   return Object.assign(defaultOptions, params);
 }
 
-async function makeResObject({resource, baseUrl, sourceDir, distDir, addAsset}) {
+async function makeResObject({resource, baseUrl, sourceDir, binaryDir, addAsset}) {
   if (typeof resource !== "string")
     return null;
 
@@ -25,7 +25,7 @@ async function makeResObject({resource, baseUrl, sourceDir, distDir, addAsset}) 
   const href = path.posix.join(baseUrl, filename);
 
   const input = path.resolve(sourceDir, resource);
-  const output = path.resolve(distDir, filename);
+  const output = path.resolve(binaryDir, filename);
 
   addAsset(filename);
   if (await copyFileIfDifferent(input, output))
@@ -34,20 +34,20 @@ async function makeResObject({resource, baseUrl, sourceDir, distDir, addAsset}) 
   return { input, output, href };
 }
 
-async function configure({dom, baseUrl, sourceDir, distDir, addAsset}) {
+async function configure({dom, baseUrl, sourceDir, binaryDir, addAsset}) {
   if (!dom) return;
   for (const [ name, params ] of Object.entries(dom.targets || {})) {
     params.output = params.output || {};
     params.output.filename = params.output.filename || `${name}.html`;
-    params.favicon = await makeResObject({resource: params.favicon || (dom.options && dom.options.favicon), baseUrl, sourceDir, distDir, addAsset});
+    params.favicon = await makeResObject({resource: params.favicon || (dom.options && dom.options.favicon), baseUrl, sourceDir, binaryDir, addAsset});
     params.shortcut = {
       light: await makeResObject({
         resource: (params.shortcut && params.shortcut.light) || (dom.options && dom.options.shortcut && dom.options.shortcut.light),
-        baseUrl, sourceDir, distDir, addAsset
+        baseUrl, sourceDir, binaryDir, addAsset
       }),
       dark: await makeResObject({
         resource: (params.shortcut && params.shortcut.dark) || (dom.options && dom.options.shortcut && dom.options.shortcut.dark),
-        baseUrl, sourceDir, distDir, addAsset
+        baseUrl, sourceDir, binaryDir, addAsset
       }),
     };
 
@@ -168,7 +168,7 @@ async function webpackBuild(config) {
 }
 
 async function generate(context) {
-  const {dom, baseUrl, isDebug, sourceDir, binaryDir, distDir, writeAsset, addAsset, setApplication} = context;
+  const {dom, baseUrl, isDebug, sourceDir, binaryDir, writeAsset, addAsset, setApplication} = context;
 
   if (!dom) return;
 
@@ -317,11 +317,11 @@ async function generate(context) {
         to: jsBootFilename,
         isDebug: false,
         workDir: sourceDir,
-        distDir,
+        binaryDir,
         addAsset: null,
         staticControlFile: null,
       });
-      bootScriptString = await fs.promises.readFile(path.resolve(distDir, jsBootFilename), "utf8");
+      bootScriptString = await fs.promises.readFile(path.resolve(binaryDir, jsBootFilename), "utf8");
     }
     // head
     const headFrg = document.createDocumentFragment();
@@ -547,7 +547,7 @@ async function generate(context) {
         to: jsBundleFilename,
         isDebug,
         workDir: sourceDir,
-        distDir,
+        binaryDir,
         addAsset,
         staticControlFile,
       });
@@ -591,7 +591,7 @@ async function generate(context) {
         const filename = path.basename(pathStr);
 
         const inFilename = path.resolve(sourceDir, pathStr);
-        const outFilename = path.resolve(distDir, filename);
+        const outFilename = path.resolve(binaryDir, filename);
   
         addAsset(filename);
         if (await copyFileIfDifferent(inFilename, outFilename))
