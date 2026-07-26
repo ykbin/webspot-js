@@ -27,8 +27,14 @@ export default async (env, argv) => {
     module: {
     },
     externals: {
+      "jsdom": "commonjs jsdom",
       "webpack": "commonjs webpack",
       "webpack-cli": "commonjs webpack-cli",
+      "postcss": "commonjs postcss",
+      "postcss-url": "commonjs postcss-url",
+      "postcss-import": "commonjs postcss-import",
+      "autoprefixer": "commonjs autoprefixer",
+      "@csstools/postcss-minify": "commonjs @csstools/postcss-minify",
     },
     plugins: [
       new webpack.BannerPlugin({
