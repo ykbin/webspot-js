@@ -40,54 +40,75 @@ async function preConfigure(config) {
 
   const assets = {
     name: config.name,
-    baseUrl: config.baseUrl,
-    resources: [],
+    base: config.baseUrl,
+    files: [],
   };
 
-  const addAssetItem = (item) => {
-    for (const iter of assets.resources) {
+  const entries = [];
+  const addFile = (item) => {
+    for (const iter of assets.files) {
       if (isEqualValue(iter, item))
         return false;
     }
-    assets.resources.push(item);
+    assets.files.push(item);
     return true;
   }
 
-  config.addAsset = (src) => {
-    src = src.replace(/\\/g, "/");
-    addAssetItem({ path: src });
+  const re = /\\/g;
+  config.addAsset = (file, alias) => {
+    file = file.replace(re, path.posix.sep);
+    for (let iter of alias ?? [ file ]) {
+      addFile({ url: path.posix.resolve(assets.base, iter), file, entry: entries.includes(file) });
+    }
   };
 
   config.writeAsset = async (src, content, options) => {
-    const pathStr = src.replace(/\\/g, "/");
-    if (options.alias) {
-      for (const iter of options.alias)
-      addAssetItem({ alias: iter, path: pathStr });
+    const file = src.replace(re, path.posix.sep);
+    for (let iter of options.alias ?? [ file ]) {
+      iter = iter.replace(re, path.posix.sep);
+      addFile({ url: path.posix.resolve(assets.base, iter), file, entry: entries.includes(file) });
     }
-    else {
-      addAssetItem({ path: pathStr });
-    }
-
     const filename = path.resolve(config.binaryDir, src);
     await fs.promises.writeFile(filename, content, { encoding: 'utf8', flag: 'w' });
   };
 
-  config.flushAsset = async () => {
-    const content = JSON.stringify(assets);
-    await fs.promises.writeFile(path.resolve(config.binaryDir, 'WebAssetConfig.json'), content, { encoding: 'utf8', flag: 'w' });
-    console.log(`[asset.json] Generate WebAssetConfig.json`);
-  };
-
   config.setApplication = (application) => {
     assets.application = application;
+    if (application.title) {
+      assets.title = application.title;
+      delete assets.application.title;
+    }
+    if (application.description) {
+      assets.description = application.description;
+      delete assets.application.description;
+    }
+    if (application.main) {
+      const file = application.main.replace(re, path.posix.sep);
+      entries.push(file);
+      for (const iter of assets.files) {
+        if (iter.file === file) {
+          iter.entry = true;
+          break;
+        }
+      }
+      delete assets.application.main;
+    }
+  };
+
+  config.flushAsset = async () => {
+    const files = assets.files;
+    delete assets.files;
+    assets.files = files;
+
+    const content = JSON.stringify(assets);
+    const basename = "manifest.json";
+    await fs.promises.writeFile(path.resolve(config.binaryDir, basename), content, { encoding: 'utf8', flag: 'w' });
+    console.log(`[asset.json] Generate ${basename}`);
   };
   
   if (fs.existsSync(config.binaryDir))
     fs.rmSync(config.binaryDir, {recursive: true});
   fs.mkdirSync(config.binaryDir);
-}
-
-async function preGenerate({binaryDir}) {
 }
 
 export default {
@@ -111,14 +132,9 @@ export default {
         await module.configure(config).catch(onError);
       }
 
-      await preGenerate(config);
-
       for (const module of modules) {
         await module.generate(config).catch(onError);
       }
-
-      // make
-      // install
 
       await config.flushAsset();
     })();

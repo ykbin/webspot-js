@@ -26,11 +26,14 @@ async function configure({resource, sourceDir, binaryDir, addAsset}) {
       }
     }
 
+    let alias;
     if (input.startsWith(IMPORT_SCHEME)) {
       const moduleName = input.slice(IMPORT_SCHEME.length);
       input = import.meta.resolve(moduleName);
+      alias = [ path.posix.basename(input) ];
     }
     if (input.startsWith(FILE_SCHEME)) {
+      alias = [ path.posix.basename((new URL(input)).pathname) ];
       input = url.fileURLToPath(input);
     }
 
@@ -53,7 +56,7 @@ async function configure({resource, sourceDir, binaryDir, addAsset}) {
     output = path.resolve(binaryDir, output);
     rfile = path.relative(binaryDir, output);
 
-    addAsset(rfile);
+    addAsset(rfile, alias);
   
     if (await copyFileIfDifferent(input, output)) {
       console.log(`[resource.configure] Copy ${rfile}`);
