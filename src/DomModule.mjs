@@ -27,16 +27,18 @@ async function makeResObject({resource, baseUrl, sourceDir, binaryDir, addAsset}
   const input = path.resolve(sourceDir, resource);
   const output = path.resolve(binaryDir, filename);
 
-  addAsset(filename);
+  addAsset(filename, {});
   if (await copyFileIfDifferent(input, output))
     console.log(`[dom.configure] Copy ${resource}`);
   
   return { input, output, href };
 }
 
-async function configure({dom, baseUrl, sourceDir, binaryDir, addAsset}) {
-  if (!dom) return;
-  for (const [ name, params ] of Object.entries(dom.targets || {})) {
+async function configure({dom, entries, baseUrl, sourceDir, binaryDir, addAsset}) {
+  dom = dom ?? {};
+  entries = entries ?? dom?.targets;
+  if (!entries) return;
+  for (const [ name, params ] of Object.entries(entries)) {
     params.output = params.output || {};
     params.output.filename = params.output.filename || `${name}.html`;
     params.favicon = await makeResObject({resource: params.favicon || (dom.options && dom.options.favicon), baseUrl, sourceDir, binaryDir, addAsset});
@@ -168,9 +170,11 @@ async function webpackBuild(config) {
 }
 
 async function generate(context) {
-  const {dom, baseUrl, isDebug, sourceDir, binaryDir, writeAsset, addAsset, setApplication} = context;
+  const {baseUrl, isDebug, sourceDir, binaryDir, writeAsset, addAsset, setApplication} = context;
 
-  if (!dom) return;
+  const dom = context.dom ?? {};
+  const entries = context.entries ?? dom?.targets;
+  if (!entries) return;
 
   const lookupTemplate = (pkg, name) => {
     return undefined;
@@ -221,10 +225,10 @@ async function generate(context) {
     return lookupObjectImpl(pkg, name, "control", controls);
   };
 
-  for (const [ name, params ] of Object.entries(dom.targets || {})) {
+  for (const [ name, params ] of Object.entries(entries)) {
     const parameters = getOptions(params);
     const staticControlFile = parameters.control && parameters.control.basic && path.resolve(sourceDir, parameters.control.basic) || null;
-    const { entry, alias, title, description, hasMeta, output, style, script, bootScript } = parameters;
+    const { entry, alias, title, description, hasMeta, output, style, script, bootScript, headers } = parameters;
     const inFilename = path.resolve(sourceDir, entry);
 
     const cssFilename = `${name}.bundle.css`;
@@ -537,7 +541,7 @@ async function generate(context) {
     }
 
     if (cssResult.length) {
-      await writeAsset(cssFilename, cssResult.join(""), {type: "text/css"});
+      await writeAsset(cssFilename, cssResult.join(""), {type: "text/css", headers});
       console.log(`[style.bundle] Generate ${cssFilename}`);
     }
 
@@ -550,6 +554,7 @@ async function generate(context) {
         binaryDir,
         addAsset,
         staticControlFile,
+        headers,
       });
     }
 
@@ -565,6 +570,7 @@ async function generate(context) {
 
     let options = {
       type: "text/html",
+      headers,
     };
 
     const toUrlString = (pathStr) => {
@@ -580,7 +586,11 @@ async function generate(context) {
       }
     }
 
-    if (params.application) {
+    const html = dom.serialize();
+    await writeAsset(output.filename, html, options);
+    console.log(`[dom.bundle] Generate ${output.filename}`);
+
+    if (params.visible) {
       const application = {
         title,
         main: output.filename, // DELME: options.alias ? options.alias[0] : output.filename,
@@ -592,34 +602,47 @@ async function generate(context) {
 
         const inFilename = path.resolve(sourceDir, pathStr);
         const outFilename = path.resolve(binaryDir, filename);
-  
-        addAsset(filename);
+
+        addAsset(filename, { headers });
         if (await copyFileIfDifferent(inFilename, outFilename))
           console.log(`[dom.configure] Copy ${filename}`);
 
         return filename;
       }
 
-      if (params.application.icon) {
-        application.icon = [];
-        for (const iter of getDarkLightFileList(params.application.icon)) {
-          application.icon.push(await addAppImage(iter));
+      const toImgObj = async (imgs) => {
+        if (!imgs)
+          return;
+        let light, dark
+        if (typeof imgs === "string")
+          light = imgs;
+        else if (Array.isArray(imgs)) {
+          light = imgs[0];
+          dark = imgs[1];
         }
-      }
+        else {
+          light = imgs.light;
+          dark = imgs.dark;
+        }
+        if (light)
+          light = await addAppImage(light);
+        if (dark)
+          dark = await addAppImage(dark);
+        if (light || dark)
+          return { light: light ?? dark, dark: dark ?? light };
+        return;
+      };
 
-      if (params.application.logo) {
-        application.logo = [];
-        for (const iter of getDarkLightFileList(params.application.logo)) {
-          application.logo.push(await addAppImage(iter));
-        }
-      }
+      const icons = await toImgObj(params.icons);
+      if (icons)
+        application.icon = [ icons.light, icons.dark ];
+
+      const screenshots = await toImgObj(params.screenshots);
+      if (screenshots)
+        application.logo = [ screenshots.light, screenshots.dark ];
 
       setApplication(application);
     }
-
-    const html = dom.serialize();
-    await writeAsset(output.filename, html, options);
-    console.log(`[dom.bundle] Generate ${output.filename}`);
   }
 };
 

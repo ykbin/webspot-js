@@ -56,7 +56,7 @@ async function configure({resource, sourceDir, binaryDir, addAsset}) {
     output = path.resolve(binaryDir, output);
     rfile = path.relative(binaryDir, output);
 
-    addAsset(rfile, alias);
+    addAsset(rfile, { alias });
   
     if (await copyFileIfDifferent(input, output)) {
       console.log(`[resource.configure] Copy ${rfile}`);

@@ -10,7 +10,7 @@ async function configure({image, sourceDir, binaryDir, addAsset}) {
     const inFilename = path.resolve(sourceDir, iter);
     const filename = path.relative(inDirname, inFilename);
     const outFilename = path.resolve(binaryDir, filename);
-    addAsset(filename);
+    addAsset(filename, {});
     if (await copyFileIfDifferent(inFilename, outFilename)) {
       console.log(`[image.configure] Copy ${iter}`);
     }
