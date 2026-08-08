@@ -52,7 +52,7 @@ async function buildJson({script, sourceDir, writeAsset}) {
   }
 }
 
-async function processScript({ from, to, isDebug, workDir, binaryDir, addAsset, type, staticControlFile, resolveAlias }) {
+async function processScript({ from, to, isDebug, workDir, binaryDir, addAsset, headers, type, staticControlFile, resolveAlias }) {
   const filename = to;
 
   const defaultParams = {
@@ -130,11 +130,11 @@ async function processScript({ from, to, isDebug, workDir, binaryDir, addAsset, 
   });
 
   if (addAsset) {
-    addAsset(filename);
+    addAsset(filename, { type: "text/javascript", headers });
     if (params.output.sourceMapFilename)
-      addAsset(params.output.sourceMapFilename);
+      addAsset(params.output.sourceMapFilename, { type: "application/json", headers });
     if (!isDebug)
-      addAsset(`${filename}.LICENSE.txt`);
+      addAsset(`${filename}.LICENSE.txt`, { type: "text/plain", headers });
   }
 
   console.log(`[script.bundle] Generate ${filename}`);

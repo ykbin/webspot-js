@@ -40,54 +40,104 @@ async function preConfigure(config) {
 
   const assets = {
     name: config.name,
-    baseUrl: config.baseUrl,
-    resources: [],
+    base: config.baseUrl,
+    files: [],
   };
 
-  const addAssetItem = (item) => {
-    for (const iter of assets.resources) {
+  const getUrl = (filename) => {
+    const item = assets.files.find(i => i.file === filename);
+    if (!item)
+      throw new Error(`No URL for ${filename}`);
+    return item.url;
+  }
+
+  const addFile = (item) => {
+    for (const iter of assets.files) {
       if (isEqualValue(iter, item))
         return false;
     }
-    assets.resources.push(item);
+    assets.files.push(item);
     return true;
   }
 
-  config.addAsset = (src) => {
-    src = src.replace(/\\/g, "/");
-    addAssetItem({ path: src });
+  const re = /\\/g;
+  config.addAsset = (file, options) => {
+    file = file.replace(re, path.posix.sep);
+    for (let iter of options.alias ?? [ file ]) {
+      const item = { url: path.posix.resolve(assets.base, iter), file };
+      if (options.type)
+        item.type = options.type;
+      if (options.headers)
+        item.headers = options.headers;
+      addFile(item);
+    }
   };
 
   config.writeAsset = async (src, content, options) => {
-    const pathStr = src.replace(/\\/g, "/");
-    if (options.alias) {
-      for (const iter of options.alias)
-      addAssetItem({ alias: iter, path: pathStr });
+    const file = src.replace(re, path.posix.sep);
+    for (let iter of options.alias ?? [ file ]) {
+      iter = iter.replace(re, path.posix.sep);
+      const item = { url: path.posix.resolve(assets.base, iter), file };
+      if (options.type)
+        item.type = options.type;
+      if (options.headers)
+        item.headers = options.headers;
+      addFile(item);
     }
-    else {
-      addAssetItem({ path: pathStr });
-    }
-
     const filename = path.resolve(config.binaryDir, src);
     await fs.promises.writeFile(filename, content, { encoding: 'utf8', flag: 'w' });
   };
 
-  config.flushAsset = async () => {
-    const content = JSON.stringify(assets);
-    await fs.promises.writeFile(path.resolve(config.binaryDir, 'WebAssetConfig.json'), content, { encoding: 'utf8', flag: 'w' });
-    console.log(`[asset.json] Generate WebAssetConfig.json`);
+  config.setApplication = (application) => {
+    if (!application.main)
+      throw new Error("No main entry");
+
+    const entry = {
+      title: application.title ?? "",
+      description: application.description ?? "",
+      main: getUrl(application.main),
+      icons: [],
+      screenshots: [],
+    };
+
+    if (application.icon) {
+      for (let i = 0; i < application.icon.length; i++) {
+        entry.icons.push({
+          url: getUrl(application.icon[i]),
+          colorScheme: (i % 2) ? "dark" : "light",
+        });
+      }
+    }
+
+    if (application.logo) {
+      for (let i = 0; i < application.logo.length; i++) {
+        entry.screenshots.push({
+          url: getUrl(application.logo[i]),
+          colorScheme: (i % 2) ? "dark" : "light",
+        });
+      }
+    }
+
+    if (assets.entries)
+      assets.entries.push(entry);
+    else
+      assets.entries = [ entry ];
   };
 
-  config.setApplication = (application) => {
-    assets.application = application;
+  config.flushAsset = async () => {
+    const files = assets.files;
+    delete assets.files;
+    assets.files = files;
+
+    const content = JSON.stringify(assets);
+    const basename = "manifest.json";
+    await fs.promises.writeFile(path.resolve(config.binaryDir, basename), content, { encoding: 'utf8', flag: 'w' });
+    console.log(`[asset.json] Generate ${basename}`);
   };
   
   if (fs.existsSync(config.binaryDir))
     fs.rmSync(config.binaryDir, {recursive: true});
   fs.mkdirSync(config.binaryDir);
-}
-
-async function preGenerate({binaryDir}) {
 }
 
 export default {
@@ -111,14 +161,9 @@ export default {
         await module.configure(config).catch(onError);
       }
 
-      await preGenerate(config);
-
       for (const module of modules) {
         await module.generate(config).catch(onError);
       }
-
-      // make
-      // install
 
       await config.flushAsset();
     })();
